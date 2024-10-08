@@ -101,6 +101,8 @@ DATABASES = {
         'PORT': '5432', # Стандартный порт PostgreSQL
         'OPTIONS': {'options': '-c client_encoding=utf8'},
         'TEST_CHARSET': 'utf8',
+
+        
     }
 }
 
