@@ -178,7 +178,7 @@ class Collection(models.Model):
 
 class CollectionPlant(models.Model):
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
-    plant = models.ManyToManyField(Plant, on_delete=models.CASCADE)
+    plant = models.ForeignKey(Plant, on_delete=models.CASCADE)
 
 
     def __str__(self):
@@ -196,7 +196,7 @@ class CollectionPlant(models.Model):
 
 class RecommendationPlant(models.Model):
     recommendation = models.ForeignKey(Recommendation, on_delete=models.CASCADE)
-    plant = models.ManyToManyField(Plant, on_delete=models.CASCADE)
+    plant = models.ForeignKey(Plant, on_delete=models.CASCADE)
 
 
     def __str__(self):
