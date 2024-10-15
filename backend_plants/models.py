@@ -120,7 +120,7 @@ class Plant(models.Model):
 
 class Recommendation(models.Model):
     id = models.AutoField(primary_key=True)
-    includes_plants = models.ManyToManyField(Plant, through='CollectionPlant', null=False)
+    includes_plants = models.ManyToManyField(Plant, through='RecommendationPlant', null=False)
 
     def plant_names(self):
         return self.includes_plants.all()

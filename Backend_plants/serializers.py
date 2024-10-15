@@ -1,6 +1,6 @@
 # поля, которые вы хотели бы, чтобы преобразовывались в JSON и отправлялись клиенту.
 # Сериализаторы были придуманы для того, чтобы преобразовывать наши модели из базы данных в JSON и наоборот.
-from models import *
+from backend_plants.models import *
 from rest_framework import serializers
 from collections import OrderedDict
 

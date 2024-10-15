@@ -10,8 +10,8 @@ from django.http import JsonResponse
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from serializers import *
-from models import *
+from Backend_plants.serializers import *
+from backend_plants.models import *
 from rest_framework.decorators import api_view
 from operator import itemgetter
 # from drf_yasg.utils import swagger_auto_schema
@@ -32,7 +32,7 @@ from django.core.cache import cache
 from base64 import b64encode
 from django.core.files.base import ContentFile
 import requests
-from drf_yasg.utils import swagger_auto_schema
+# from drf_yasg.utils import swagger_auto_schema
 
 def get_session_id(request):
     session = request.COOKIES.get('session_id')
@@ -49,7 +49,7 @@ def get_session_id(request):
 
 
 
-@swagger_auto_schema(method='post',request_body=UserRegisterSerializer)
+#@swagger_auto_schema(method='post',request_body=UserRegisterSerializer)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @authentication_classes([])
@@ -70,7 +70,7 @@ def register(request):
     return Response(message, status=status.HTTP_201_CREATED)
     
 
-@swagger_auto_schema(method='post',request_body=UserLoginSerializer)
+#@swagger_auto_schema(method='post',request_body=UserLoginSerializer)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @authentication_classes([])
@@ -114,7 +114,7 @@ def login_view(request):
 
     return response
     
-@swagger_auto_schema(method='POST')
+#@swagger_auto_schema(method='POST')
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def check(request):
@@ -159,7 +159,7 @@ def logout_view(request):
 # список растений (услуг)
 @api_view(['GET'])
 @permission_classes([AllowAny])
-@swagger_auto_schema(method='GET')
+#@swagger_auto_schema(method='GET')
 def get_plants(request, format=None):
     plant_name_r = request.GET.get('plant_name')
     collectionID = 0
@@ -244,7 +244,7 @@ def get_plants(request, format=None):
 
 
 # информация о растении (услуге)
-@swagger_auto_schema(method='get')
+#@swagger_auto_schema(method='get')
 @api_view(['GET'])
 def get_plant(request, id, format=None):
     print("plant_id =", id)
@@ -256,7 +256,7 @@ def get_plant(request, id, format=None):
 
 
 # добавление нового растения (услуги)
-@swagger_auto_schema(method='post',request_body=PlantSerializer)
+#@swagger_auto_schema(method='post',request_body=PlantSerializer)
 @api_view(['POST'])
 @permission_classes([IsManager])
 def add_new_plant(request, format=None):
@@ -277,7 +277,7 @@ def add_new_plant(request, format=None):
 
 
 # обновление информации о заболевании (услуге)
-@swagger_auto_schema(method='put', request_body=PlantSerializer)
+#@swagger_auto_schema(method='put', request_body=PlantSerializer)
 @api_view(['PUT'])
 @permission_classes([IsManager])
 @authentication_classes([])
@@ -317,7 +317,7 @@ def delete_plant(request, id, format=None):
 
 
 # добавление услуги в заявку
-@swagger_auto_schema(method='post', request_body=PlantSerializer)
+#@swagger_auto_schema(method='post', request_body=PlantSerializer)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_plant_to_collection(request, id):
@@ -356,7 +356,7 @@ def add_plant_to_collection(request, id):
 
 # список препаратов (заявок)
 # @permission_classes([IsAuthenticated])
-@swagger_auto_schema(method='get')
+#@swagger_auto_schema(method='get')
 @permission_classes([IsAuthenticated])
 @authentication_classes([BasicAuthentication])
 @api_view(['GET'])
@@ -397,7 +397,7 @@ def get_collections(request, format=None):
 
 # информация о препарате (заявке)
 # @permission_classes([IsAuthenticated])
-@swagger_auto_schema(method='get')
+#@swagger_auto_schema(method='get')
 @permission_classes([IsAuthenticated])
 @authentication_classes([BasicAuthentication])
 @api_view(['GET'])
@@ -521,7 +521,7 @@ def delete_plant_from_collection(request, collection_id_r, plant_id_r, format=No
 
 # @permission_classes([AllowAny])
 # @authentication_classes([])
-@swagger_auto_schema(method='put', request_body=CollectionSerializer)
+#@swagger_auto_schema(method='put', request_body=CollectionSerializer)
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def collection_upd_status_to_created(request, id):
@@ -545,7 +545,7 @@ def collection_upd_status_to_created(request, id):
 
 # @permission_classes([AllowAny])
 # @authentication_classes([])
-@swagger_auto_schema(method='put', request_body=CollectionSerializer)
+#@swagger_auto_schema(method='put', request_body=CollectionSerializer)
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def collection_upd_status_to_editing(request, id):
@@ -567,7 +567,7 @@ def collection_upd_status_to_editing(request, id):
     return Response({'message': 'Успешно обновлен статус коллекции на "Черновик"'}, status=status.HTTP_200_OK)
 
 
-# @swagger_auto_schema(method='put', request_body=DrugSerializer)
+# #@swagger_auto_schema(method='put', request_body=DrugSerializer)
 # @api_view(['PUT'])
 # @permission_classes([IsManager])
 # @authentication_classes([])
@@ -603,7 +603,7 @@ def collection_upd_status_to_editing(request, id):
 session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
 
-@swagger_auto_schema(method='get')
+#@swagger_auto_schema(method='get')
 @api_view(['GET'])
 # @permission_classes([AllowAny])
 # @authentication_classes([BasicAuthentication])
@@ -615,7 +615,7 @@ def get_users(request,format=None):
 
 # информация о препарате (заявке)
 # @permission_classes([IsAuthenticated])
-@swagger_auto_schema(method='get')
+#@swagger_auto_schema(method='get')
 @permission_classes([IsAuthenticated])
 @authentication_classes([BasicAuthentication])
 @api_view(['GET'])
@@ -654,7 +654,7 @@ def get_recommendation(request, id_rec, format=None):
         return Response("Нет доступа к данным")
             
 
-# @swagger_auto_schema(method='put')
+# #@swagger_auto_schema(method='put')
 # @api_view(['PUT'])
 # @permission_classes([AllowAny])
 # def async_result(request, format=None):
