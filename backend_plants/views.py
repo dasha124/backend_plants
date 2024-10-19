@@ -310,9 +310,14 @@ def update_plant(request, id, format=None):
 def delete_plant(request, id, format=None):
     print('delete', id)
     plant = get_object_or_404(Plant, id=id)
-    print(plant.status)
     plant.status="d"
     plant.save()
+    print(f"################---------   delete_plant --- plant {plant.id}   ----- by moderator { request.user}")
+    moderation_action = Interaction.objects.create(
+        moderator=request.user,  # Модератор - это текущий пользователь
+        plant=plant.id,             # Растение, которое удаляется
+        action=2     # Действие - удаление
+    )
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -644,8 +649,12 @@ def get_recommendation(request, id_rec, format=None):
 
                     # Здесь добавляем растения с id = 1 и 2 пока по умолчанию, потом добавим мл по рекомендашкам сюда
             default_plants = Plant.objects.filter(id__in=[1, 2])
-            for plant in default_plants:
-                recommendation.includes_plants.add(plant)  # Добавляем растения в рекомендацию
+            base_weight = len(default_plants)
+            for index, plant in enumerate(default_plants):
+                weight = base_weight - index
+                recommendation_plant = RecommendationPlant(recommendation=recommendation, plant=plant, weight=weight)
+                recommendation_plant.save()
+
             serializer = RecommendationSerializer(recommendation)
             return Response(serializer.data)
         else:

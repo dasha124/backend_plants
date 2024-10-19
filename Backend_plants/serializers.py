@@ -9,20 +9,41 @@ from collections import OrderedDict
 class PlantClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Class
-        fields = ['class_name']
+        fields = ['id', 'class_name']
+
+
+class PlantSubclassSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Plant_Subclass
+        fields = ['id', 'subclass_name']
+
+
+class ActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Action
+        fields = '__all__' 
+
+
+class InteractionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Interaction
+        fields = '__all__'
 
 
 class PlantSerializer(serializers.ModelSerializer):
     plant_class_name = serializers.SerializerMethodField()
+    plant_subclass_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Plant
-        fields= ["id", "plant_name", "plant_class_name", "image", "general_info", "properties", "moderator_id"]
+        fields= ["id", "plant_name", "plant_class_name", "plant_subclass_name", "image", "general_info", "properties", "moderator_id"]
 
     def get_plant_class_name(self, obj):
         return obj.plant_class.class_name if obj.plant_class else None
-        
     
+    def get_plant_subclass_name(self, obj):
+        return obj.plant_subclass.subclass_name if obj.plant_subclass else None
+
     def with_collection(self, instance):
        representation = super().to_representation(instance)
        representation['collectionID'] = 0 # добавляем collectionID в сериализованные данные

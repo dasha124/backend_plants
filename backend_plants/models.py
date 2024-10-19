@@ -79,11 +79,27 @@ class Plant_Class(models.Model):
 
 
 #----------------------------------------------------------------------------------------------------------------
+class Plant_Subclass(models.Model):
+    id = models.AutoField(primary_key=True)
+    subclass_name = models.CharField(max_length=100)
+    plant_class = models.ForeignKey(Plant_Class, related_name='subclasses', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.subclass_name
+
+    class Meta:
+        managed = True
+        verbose_name = 'Подкласс растения'
+        verbose_name_plural = 'Подклассы растений'
+
+
+#----------------------------------------------------------------------------------------------------------------
 
 class Plant(models.Model):
     id = models.AutoField(primary_key=True)
     plant_name = models.CharField(default='Название растения', max_length=150)
     plant_class = models.ForeignKey(Plant_Class, on_delete=models.CASCADE)
+    plant_subclass = models.ForeignKey(Plant_Subclass, null=True, blank=True, on_delete=models.SET_NULL)
     image = models.TextField(default='')
     general_info = models.CharField(default='Описание растения', max_length=255)
     properties = models.JSONField()
@@ -94,14 +110,15 @@ class Plant(models.Model):
     ]
     status = models.CharField(max_length=1, choices=STATUSES, default='a')
 
-
-
     def __str__(self):
         # print("return self.name")
         return self.plant_name
 
     def class_name(self):
         return self.plant_class.class_name
+    
+    def subclass_name(self):
+        return self.plant_subclass.subclass_name
     
     def image64(self):
         # print("1")
@@ -121,6 +138,8 @@ class Plant(models.Model):
 class Recommendation(models.Model):
     id = models.AutoField(primary_key=True)
     includes_plants = models.ManyToManyField(Plant, through='RecommendationPlant', null=False)
+    last_modified_date = models.DateField(auto_now=True)
+    last_modified_time = models.TimeField(auto_now=True)
 
     def plant_names(self):
         return self.includes_plants.all()
@@ -179,6 +198,10 @@ class Collection(models.Model):
 class CollectionPlant(models.Model):
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     plant = models.ForeignKey(Plant, on_delete=models.CASCADE)
+    date_add = models.DateField(auto_now_add=True)
+    time_add = models.TimeField(auto_now_add=True)
+    # date_add = models.DateField(null=True)
+    # time_add = models.TimeField(null=True)  
 
 
     def __str__(self):
@@ -197,10 +220,11 @@ class CollectionPlant(models.Model):
 class RecommendationPlant(models.Model):
     recommendation = models.ForeignKey(Recommendation, on_delete=models.CASCADE)
     plant = models.ForeignKey(Plant, on_delete=models.CASCADE)
+    weight = models.IntegerField(default=5)
 
 
     def __str__(self):
-        return f"{self.recommendation}   -   {self.plant}"
+        return f"{self.recommendation}   -   {self.plant}_(Index_{self.weight})"
     
 
     class Meta:
@@ -209,6 +233,47 @@ class RecommendationPlant(models.Model):
         verbose_name_plural = 'РекомендацииРастения'
 
 
+#----------------------------------------------------------------------------------------------------------------
+
+class Action(models.Model):
+    id = models.AutoField(primary_key=True)
+    action_name = models.CharField(default='Название действия', max_length=50)
+
+    # 0 - добавление
+    # 1 - изменение
+    # 2 - удаление
+
+    def __str__(self):
+        return self.action_name
+    
+    class Meta:
+        managed = True
+        verbose_name = 'Действие'
+        verbose_name_plural = 'Действия'
+
+#----------------------------------------------------------------------------------------------------------------
+
+class Interaction(models.Model):
+    id = models.AutoField(primary_key=True)
+    moderator = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='moderator_id')
+    plant = models.ForeignKey(Plant, on_delete=models.CASCADE) 
+    action = models.ForeignKey(Action, on_delete=models.CASCADE)
+    date = models.DateField(auto_now_add=True) # время, когда действие было сделано
+    time = models.TimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.moderator} - {self.plant} - {self.action}"
+    
+    def action_name(self):
+        return self.action.action_name
+    
+    def plant_name(self):
+        return self.plant.plant_name
+    
+    class Meta:
+        managed = True
+        verbose_name = 'Действие'
+        verbose_name_plural = 'Действия'
 
 
 
