@@ -9,13 +9,13 @@ from collections import OrderedDict
 class PlantClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Class
-        fields = ['id', 'class_name']
+        fields = ['class_id', 'class_name']
 
 
 class PlantSubclassSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Subclass
-        fields = ['id', 'subclass_name']
+        fields = ['plant_subclass_id', 'subclass_name']
 
 
 class ActionSerializer(serializers.ModelSerializer):
@@ -36,7 +36,7 @@ class PlantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Plant
-        fields= ["id", "plant_name", "plant_class_name", "plant_subclass_name", "image_url", "general_info", "properties", "moderator_id"]
+        fields= ["plant_id", "plant_name", "plant_class_name", "plant_subclass_name", "image_url", "general_info", "properties", "moderator_id"]
 
     def get_plant_class_name(self, obj):
         return obj.plant_class.class_name if obj.plant_class else None
@@ -104,9 +104,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ('id', 'email', 'password', 'is_staff', 'is_superuser', 'username')
+        fields = ('user_id', 'email', 'password', 'is_staff', 'is_superuser', 'username')
         write_only_fields = ('password',)
-        read_only_fields = ('id',)
+        read_only_fields = ('user_id',)
 
     def create(self, validated_data):
         is_staff = validated_data.pop('is_staff', False)
@@ -135,7 +135,7 @@ class UserLoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'is_superuser']
+        fields = ['user_id', 'email', 'is_superuser']
 
         # def get_fields(self):
         #     new_fields = OrderedDict()
