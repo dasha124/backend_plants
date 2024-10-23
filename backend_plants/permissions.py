@@ -17,7 +17,7 @@ class IsAuthenticated(BasePermission):
             return False
 
         try:
-            user = CustomUser.objects.get(id=payload["user_id"])
+            user = CustomUser.objects.get(user_id=payload["user_id"])
         except Exception as e:
             return False
 
@@ -37,7 +37,7 @@ class IsManager(BasePermission):
             return False
 
         try:
-            user = CustomUser.objects.get(id=payload["user_id"])
+            user = CustomUser.objects.get(user_id=payload["user_id"])
             print(user.is_superuser)
         except Exception as e:
             print("EEEEErrrrrrrrrrrrrrrrrrr")

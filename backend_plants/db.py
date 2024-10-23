@@ -2,14 +2,14 @@ import psycopg2, ctypes
 import base64
 
 
-with open('/home/student/pythonProjects/bmstu_lab/bmstu_lab/images/5.jpg', 'rb') as file:
-    image_binary = base64.b64encode(file.read()).decode('utf-8')
+# with open('/home/student/pythonProjects/bmstu_lab/bmstu_lab/images/5.jpg', 'rb') as file:
+#     image_binary = base64.b64encode(file.read()).decode('utf-8')
 
-conn = psycopg2.connect(user="student",
+conn = psycopg2.connect(user="root",
                         password="root",
                         host="127.0.0.1",
                         port="5432",
-                        database='student')
+                        database='plants_app_db')
 
 
 cursor = conn.cursor()

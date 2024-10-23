@@ -92,7 +92,7 @@ def login_view(request):
 
     # Сохранение данных пользователя в кеше
     user_data = {
-       "user_id": user.id,
+       "user_id": user.user_id,
        "user_name": user.username,
        "user_email": user.email,
        "is_superuser": user.is_superuser,
@@ -103,7 +103,7 @@ def login_view(request):
 
     # Отправка ответа с данными пользователя и установкой куки
     response_data = {
-        "user_id": user.id,
+        "user_id": user.user_id,
         "user_name": user.username,
         "user_email": user.email,
         "is_superuser": user.is_superuser,
@@ -167,7 +167,7 @@ def get_plants(request, format=None):
     if token != 'undefined':
         payload = get_jwt_payload(token)
         user_id = payload["user_id"]
-        curr_user = CustomUser.objects.get(id = user_id)
+        curr_user = CustomUser.objects.get(user_id = user_id)
         print("uuuuuuu", curr_user)
 
         # try {        #     drug = Medical_drug.objects.get(user_id_id=user_id, status=0)
@@ -182,13 +182,13 @@ def get_plants(request, format=None):
                 print(plants)
             try:
                 collection = Collection.objects.get(user_id=user_id, status=0)
-                collectionID = collection.id
+                collectionID = collection.collection_id
             except Collection.DoesNotExist:
                 collectionID = 0
         else:
             try:
                 collection = Collection.objects.get(user_id=user_id, status=0)
-                collectionID = collection.id
+                collectionID = collection.collection_id
             except Collection.DoesNotExist:
                 collectionID = 0
 
@@ -248,7 +248,7 @@ def get_plants(request, format=None):
 @api_view(['GET'])
 def get_plant(request, id, format=None):
     print("plant_id =", id)
-    plant = get_object_or_404(Plant, id=id)
+    plant = get_object_or_404(Plant, plant_id=id)
     if request.method == 'GET':
         serializer = PlantSerializer(plant)
         return Response(serializer.data)
@@ -263,7 +263,8 @@ def add_new_plant(request, format=None):
 
     data = request.POST.dict()
     image_file = request.FILES.get('image')
-
+    
+    # TODO, чтобы работать со ссылкой изображения 
     if image_file:
         image_data = b64encode(image_file.read()).decode('utf-8')
         data['image'] = image_data
@@ -282,9 +283,9 @@ def add_new_plant(request, format=None):
 @permission_classes([IsManager])
 @authentication_classes([])
 def update_plant(request, id, format=None):
-    plant = get_object_or_404(Plant, id=id)
+    plant = get_object_or_404(Plant, plant_id=id)
 
-
+    # TODO, чтобы работать со ссылкой изображения 
     image_file = request.FILES.get('image')
     if image_file:
         # Создание и сохранение изображения в формате base64
@@ -309,13 +310,13 @@ def update_plant(request, id, format=None):
 @authentication_classes([BasicAuthentication])
 def delete_plant(request, id, format=None):
     print('delete', id)
-    plant = get_object_or_404(Plant, id=id)
+    plant = get_object_or_404(Plant, plant_id=id)
     plant.status="d"
     plant.save()
-    print(f"################---------   delete_plant --- plant {plant.id}   ----- by moderator { request.user}")
+    print(f"################---------   delete_plant --- plant {plant.plant_id}   ----- by moderator { request.user}")
     moderation_action = Interaction.objects.create(
         moderator=request.user,  # Модератор - это текущий пользователь
-        plant=plant.id,             # Растение, которое удаляется
+        plant=plant.plant_id,             # Растение, которое удаляется
         action=2     # Действие - удаление
     )
     return Response(status=status.HTTP_204_NO_CONTENT)
@@ -328,7 +329,7 @@ def delete_plant(request, id, format=None):
 def add_plant_to_collection(request, id):
     print("add pl to coll", id)
 
-    if not Plant.objects.filter(id=id).exists():
+    if not Plant.objects.filter(plant_id=id).exists():
         return Response(f"Растения с таким id не найдено")
     
     token = get_access_token(request)
@@ -340,15 +341,12 @@ def add_plant_to_collection(request, id):
     user_id = payload["user_id"]
     print("user", user_id)
     
-    plant = Plant.objects.get(id=id)
+    plant = Plant.objects.get(plant_id=id)
     collection = Collection.objects.get(status=0, user_id=user_id)
 
     if collection is None:
-        collection = Collection.objects.create()
-        collection.user_id = user_id
-
-        recommendation = Recommendation.objects.create()
-        recommendation.user_id = user_id
+        collection = Collection.objects.create(user_id=user_id)
+        recommendation = Recommendation.objects.create(user_id=user_id)
 
     collection.includes_plants.add(plant)
     collection.save()
@@ -375,7 +373,7 @@ def get_collections(request, format=None):
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
 
-    curr_user = CustomUser.objects.get(id = user_id)
+    curr_user = CustomUser.objects.get(user_id = user_id)
     print("cccccccccccurrr uuser =", curr_user)
 
     collection_name_r = request.GET.get('collection_name') ## поиск коллекции по названию
@@ -415,10 +413,10 @@ def get_collection(request, id, format=None):
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
 
-    curr_user = CustomUser.objects.get(id = user_id)
+    curr_user = CustomUser.objects.get(user_id = user_id)
     print("cccccccccccurrr uuser =", curr_user)
 
-    collection = get_object_or_404(Collection, id=id)
+    collection = get_object_or_404(Collection, collection_id=id)
     serializer = CollectionSerializer(collection)
 
     if not curr_user.is_superuser:
@@ -457,7 +455,7 @@ def get_collection(request, id, format=None):
 @authentication_classes([BasicAuthentication])
 def delete_collection(request, id, format=None):
 
-    collection = get_object_or_404(Collection, id=id)
+    collection = get_object_or_404(Collection, collection_id=id)
     collection.status = 2
     collection.save()
     return Response(status=status.HTTP_200_OK)
@@ -482,7 +480,7 @@ def delete_editing_collection(request, format=None):
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
 
-    curr_user = CustomUser.objects.get(id = user_id)
+    curr_user = CustomUser.objects.get(user_id = user_id)
     print("cccccccccccurrr uuser =", curr_user)
     
     
@@ -506,15 +504,15 @@ def delete_plant_from_collection(request, collection_id_r, plant_id_r, format=No
     if not token:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
     
-    if not Collection.objects.filter(id=collection_id_r).exists():
+    if not Collection.objects.filter(collection_id=collection_id_r).exists():
         return Response(f"Коллекции с таким id не существует")
-    if not Plant.objects.filter(id=plant_id_r).exists():
+    if not Plant.objects.filter(plant_id=plant_id_r).exists():
         return Response(f"Растения с таким id не существует")
     
     
-    plant = Plant.objects.get(id=plant_id_r)
+    plant = Plant.objects.get(plant_id=plant_id_r)
     print("plant =", plant)
-    collection = Collection.objects.get(id=collection_id_r)
+    collection = Collection.objects.get(collection_id=collection_id_r)
     print("collection =", collection)
     if collection.includes_plants.exists():
         collection.includes_plants.remove(plant)
@@ -537,12 +535,12 @@ def collection_upd_status_to_created(request, id):
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
 
-    if not Collection.objects.filter(id=id).exists():
+    if not Collection.objects.filter(collection_id=id).exists():
         return Response(f"Коллекции с таким id не существует")
     
     # Подключение к асинхронному веб-сервису
     
-    collection = Collection.objects.get(id=id)
+    collection = Collection.objects.get(collection_id=id)
     collection.status=1
     collection.save()
     return Response({'message': 'Успешно обновлен статус коллекции на "Сформирован"'}, status=status.HTTP_200_OK)
@@ -566,7 +564,7 @@ def collection_upd_status_to_editing(request, id):
     
     # Подключение к асинхронному веб-сервису
     
-    collection = Collection.objects.get(id=id)
+    collection = Collection.objects.get(collection_id=id)
     collection.status=0
     collection.save()
     return Response({'message': 'Успешно обновлен статус коллекции на "Черновик"'}, status=status.HTTP_200_OK)
@@ -633,10 +631,10 @@ def get_recommendation(request, id_rec, format=None):
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
 
-    curr_user = CustomUser.objects.get(id = user_id)
+    curr_user = CustomUser.objects.get(user_id= user_id)
     print("cccccccccccurrr uuser =", curr_user)
 
-    recommendation = get_object_or_404(Recommendation, id=id_rec)
+    recommendation = get_object_or_404(Recommendation, recommendation_id=id_rec)
     serializer = RecommendationSerializer(recommendation)
 
     if not curr_user.is_superuser:
@@ -648,7 +646,7 @@ def get_recommendation(request, id_rec, format=None):
             # recommended_plants = algorithm_to_get_recommendations(collection.includes_plants.all())
 
                     # Здесь добавляем растения с id = 1 и 2 пока по умолчанию, потом добавим мл по рекомендашкам сюда
-            default_plants = Plant.objects.filter(id__in=[1, 2])
+            default_plants = Plant.objects.filter(plant_id__in=[1, 2])
             base_weight = len(default_plants)
             for index, plant in enumerate(default_plants):
                 weight = base_weight - index

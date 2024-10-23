@@ -36,7 +36,7 @@ class PlantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Plant
-        fields= ["id", "plant_name", "plant_class_name", "plant_subclass_name", "image", "general_info", "properties", "moderator_id"]
+        fields= ["id", "plant_name", "plant_class_name", "plant_subclass_name", "image_url", "general_info", "properties", "moderator_id"]
 
     def get_plant_class_name(self, obj):
         return obj.plant_class.class_name if obj.plant_class else None
@@ -54,8 +54,6 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     plant = PlantSerializer(read_only = True, many=True, source='includes_plants')
     user_id = serializers.CharField(source='user.username', read_only=True)
-    moderator = serializers.CharField(source='user_id.username', read_only=True)
-
     
     class Meta:
         model = Collection
@@ -66,7 +64,7 @@ class CollectionsSerializer(serializers.ModelSerializer):
 
     plant = PlantSerializer(read_only = True, many=True, source='includes_plants')
     user_id = serializers.CharField(source='user.username', read_only=True)
-    moderator = serializers.CharField(source='moderator.username', read_only=True)
+    # moderator = serializers.CharField(source='moderator.username', read_only=True)
 
     
     class Meta:
