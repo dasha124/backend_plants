@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import jwt
 from django.conf import settings
@@ -43,13 +43,36 @@ def set_access_token_cookie(response, access_token):
 def set_refresh_token_cookie(response, refresh_token):
     response.set_cookie('refresh_token', refresh_token, expires=REFRESH_TOKEN_LIFETIME, httponly=False)
 
-
+# !!!!!!!!  он нужен, пока не пон, в чем проблема
 def get_jwt_payload(token):
     if isinstance(token, str):
         token = token.encode('utf-8')
-
     payload = jwt.decode(token, KEY, algorithms=['HS256'])
+    # payload = None
     return payload
+
+# JWT = {
+#     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+#     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+#     "ALGORITHM": "HS256",
+#     "SIGNING_KEY": "MY_SIGNING_KEY_123",
+# }
+
+# def get_jwt_payload(token):
+#     if isinstance(token, str):
+#         token = token.encode('utf-8')
+
+#     try:
+#         # payload = jwt.decode(token, KEY, algorithms=['HS256'])
+#         payload = jwt.decode(token, JWT["SIGNING_KEY"], algorithms=[JWT["ALGORITHM"]])
+#         return payload
+#     except jwt.ExpiredSignatureError:
+#         print("Token has expired.")
+#         return None
+#     except jwt.InvalidTokenError:
+#         print("Invalid token.")
+#         return None
+   
 
 
 def get_access_token(request):

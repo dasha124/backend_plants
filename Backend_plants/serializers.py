@@ -36,7 +36,7 @@ class PlantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Plant
-        fields= ["plant_id", "plant_name", "plant_class_name", "plant_subclass_name", "image_url", "general_info", "properties", "moderator_id"]
+        fields= ["plant_id", "plant_name", "plant_class_name", "plant_subclass_name", "image_url", "general_info", "properties"]
 
     def get_plant_class_name(self, obj):
         return obj.plant_class.class_name if obj.plant_class else None

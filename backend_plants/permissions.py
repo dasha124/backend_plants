@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission
 
-from .jwt_tokens import get_jwt_payload, get_access_token
-from .models import CustomUser
+from backend_plants.jwt_tokens import get_jwt_payload, get_access_token
+from backend_plants.models import CustomUser, AdminUser
 
 
 class IsAuthenticated(BasePermission):
@@ -37,7 +37,8 @@ class IsManager(BasePermission):
             return False
 
         try:
-            user = CustomUser.objects.get(user_id=payload["user_id"])
+            # user = CustomUser.objects.get(user_id=payload["user_id"])
+            user = AdminUser.objects.get(id=payload["user_id"])
             print(user.is_superuser)
         except Exception as e:
             print("EEEEErrrrrrrrrrrrrrrrrrr")

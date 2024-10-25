@@ -6,8 +6,6 @@ from django.shortcuts import render, redirect
 from datetime import date
 from django.db import connection
 from django.http import JsonResponse
-
-from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from Backend_plants.serializers import *
@@ -17,6 +15,7 @@ from operator import itemgetter
 # from drf_yasg.utils import swagger_auto_schema
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponse
+from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.decorators import authentication_classes, permission_classes
@@ -32,7 +31,14 @@ from django.core.cache import cache
 from base64 import b64encode
 from django.core.files.base import ContentFile
 import requests
+from backend_plants.minio import add_pic
 # from drf_yasg.utils import swagger_auto_schema
+
+
+# Connect to our Redis instance
+
+###########   включиииииить потом при настройке авторизации !!!!!!!!!!
+# session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
 def get_session_id(request):
     session = request.COOKIES.get('session_id')
@@ -47,12 +53,10 @@ def get_session_id(request):
     return session
 
 
-
-
-#@swagger_auto_schema(method='post',request_body=UserRegisterSerializer)
-@api_view(["POST"])
-@permission_classes([AllowAny])
-@authentication_classes([])
+# #@swagger_auto_schema(method='post',request_body=UserRegisterSerializer)
+# @api_view(["POST"])
+# @permission_classes([AllowAny])
+# @authentication_classes([])
 def register(request):
     # Ensure username and passwords are posted is properly
     serializer = UserRegisterSerializer(data=request.data)
@@ -63,17 +67,17 @@ def register(request):
     # Create user
     user = serializer.save()
     message = {
-        'message': 'Пользователь успешно зарегистрирован',
+        'сообщение': 'Пользователь успешно зарегистрирован',
         'user_id': user.id
     }
 
     return Response(message, status=status.HTTP_201_CREATED)
     
 
-#@swagger_auto_schema(method='post',request_body=UserLoginSerializer)
-@api_view(["POST"])
-@permission_classes([AllowAny])
-@authentication_classes([])
+# #@swagger_auto_schema(method='post',request_body=UserLoginSerializer)
+# @api_view(["POST"])
+# @permission_classes([AllowAny])
+# @authentication_classes([])
 def login_view(request):
     # Проверка входных данных
     serializer = UserLoginSerializer(data=request.data)
@@ -84,7 +88,7 @@ def login_view(request):
     # Аутентификация пользователя
     user = authenticate(request, **serializer.validated_data)
     if user is None:
-        message = {"message": "Пользователь не найден"}
+        message = {"сообщение": "Пользователь не найден"}
         return Response(message, status=status.HTTP_401_UNAUTHORIZED)
 
     # Создание токена доступа
@@ -114,9 +118,9 @@ def login_view(request):
 
     return response
     
-#@swagger_auto_schema(method='POST')
-@api_view(["POST"])
-@permission_classes([AllowAny])
+# #@swagger_auto_schema(method='POST')
+# @api_view(["POST"])
+# @permission_classes([AllowAny])
 def check(request):
     access_token = get_access_token(request)
     print("check = ", access_token)
@@ -132,11 +136,8 @@ def check(request):
     return Response(user_data, status=status.HTTP_200_OK)
 
 
-
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
+# @api_view(['POST'])
+# @permission_classes([AllowAny])
 def logout_view(request):
    
     access_token = get_access_token(request)
@@ -157,9 +158,10 @@ def logout_view(request):
 
 
 # список растений (услуг)
-@api_view(['GET'])
+# @api_view(['GET'])
 @permission_classes([AllowAny])
 #@swagger_auto_schema(method='GET')
+@api_view(['GET'])
 def get_plants(request, format=None):
     plant_name_r = request.GET.get('plant_name')
     collectionID = 0
@@ -167,11 +169,20 @@ def get_plants(request, format=None):
     if token != 'undefined':
         payload = get_jwt_payload(token)
         user_id = payload["user_id"]
-        curr_user = CustomUser.objects.get(user_id = user_id)
+
+        try:
+            curr_user = CustomUser.objects.get(user_id = user_id)
+        except CustomUser.DoesNotExist:
+            curr_user = None
+        try:
+            admin_user = AdminUser.objects.get(user_id = user_id)
+        except AdminUser.DoesNotExist:
+            admin_user = None
         print("uuuuuuu", curr_user)
 
+
         # try {        #     drug = Medical_drug.objects.get(user_id_id=user_id, status=0)
-        if curr_user.is_superuser:
+        if admin_user:
             print("curr_user.is_superuser")
             if plant_name_r:
                 plants = Plant.objects.filter(
@@ -180,11 +191,8 @@ def get_plants(request, format=None):
             else:
                 plants = Plant.objects.all()
                 print(plants)
-            try:
-                collection = Collection.objects.get(user_id=user_id, status=0)
-                collectionID = collection.collection_id
-            except Collection.DoesNotExist:
-                collectionID = 0
+            collectionID = 0 # так то коллекций у админов нет
+        # if not admin_user:
         else:
             try:
                 collection = Collection.objects.get(user_id=user_id, status=0)
@@ -209,7 +217,7 @@ def get_plants(request, format=None):
         serialized_plants.append({"collectionID": collectionID})
 
         return Response(serialized_plants)
-
+    # if token == 'undefined':
     else:
         collectionID=0
         print('here')
@@ -254,45 +262,52 @@ def get_plant(request, id, format=None):
         return Response(serializer.data)
 
 
-
-# добавление нового растения (услуги)
-#@swagger_auto_schema(method='post',request_body=PlantSerializer)
-@api_view(['POST'])
-@permission_classes([IsManager])
+# # добавление нового растения (услуги)
+# #@swagger_auto_schema(method='post',request_body=PlantSerializer)
+# @api_view(['POST'])
+# @permission_classes([IsManager])
 def add_new_plant(request, format=None):
 
     data = request.POST.dict()
     image_file = request.FILES.get('image')
     
     # TODO, чтобы работать со ссылкой изображения 
-    if image_file:
-        image_data = b64encode(image_file.read()).decode('utf-8')
-        data['image'] = image_data
+    # if image_file:
+    #     image_data = b64encode(image_file.read()).decode('utf-8')
+    #     data['image'] = image_data
 
     serializer = PlantSerializer(data=data)
     if serializer.is_valid():
-        serializer.save()  
-        return Response(serializer.data, status=201)
-    return Response(serializer.errors, status=400)
+        serializer.save()
+        pic_result = add_pic(serializer, image_file)
+        # Если в результате вызова add_pic результат - ошибка, возвращаем его.
+        if 'error' in pic_result.data:    
+            return pic_result  
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-# обновление информации о заболевании (услуге)
-#@swagger_auto_schema(method='put', request_body=PlantSerializer)
-@api_view(['PUT'])
-@permission_classes([IsManager])
-@authentication_classes([])
+# # обновление информации о заболевании (услуге)
+# #@swagger_auto_schema(method='put', request_body=PlantSerializer)
+# @api_view(['PUT'])
+# @permission_classes([IsManager])
+# @authentication_classes([])
 def update_plant(request, id, format=None):
     plant = get_object_or_404(Plant, plant_id=id)
 
     # TODO, чтобы работать со ссылкой изображения 
     image_file = request.FILES.get('image')
-    if image_file:
-        # Создание и сохранение изображения в формате base64
-        image_data = b64encode(image_file.read()).decode('utf-8')
-        plant.image = image_data
+    # if image_file:
+    #     # Создание и сохранение изображения в формате base64
+    #     image_data = b64encode(image_file.read()).decode('utf-8')
+    #     plant.image = image_data
 
     # Обновление других полей растения
+
+    if image_file:
+        pic_result = add_pic(plant, image_file)
+        if 'error' in pic_result.data:
+            return pic_result
     plant.plant_name = request.data.get('plant_name', plant.plant_name)
     plant.plant_class.class_name = request.data.get('plant_class_name', plant.plant_class.class_name)
     plant.general_info = request.data.get('general_info', plant.general_info)
@@ -303,11 +318,10 @@ def update_plant(request, id, format=None):
     return Response(status=status.HTTP_200_OK)
 
 
-
-# удаление информации о заболевании (услуге)
-@api_view(['DELETE'])
-@permission_classes([IsManager])
-@authentication_classes([BasicAuthentication])
+# # удаление информации о заболевании (услуге)
+# @api_view(['DELETE'])
+# @permission_classes([IsManager])
+# @authentication_classes([BasicAuthentication])
 def delete_plant(request, id, format=None):
     print('delete', id)
     plant = get_object_or_404(Plant, plant_id=id)
@@ -315,17 +329,17 @@ def delete_plant(request, id, format=None):
     plant.save()
     print(f"################---------   delete_plant --- plant {plant.plant_id}   ----- by moderator { request.user}")
     moderation_action = Interaction.objects.create(
-        moderator=request.user,  # Модератор - это текущий пользователь
+        moderator=request.user,  # Модератор - это текущий админ
         plant=plant.plant_id,             # Растение, которое удаляется
         action=2     # Действие - удаление
     )
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# добавление услуги в заявку
-#@swagger_auto_schema(method='post', request_body=PlantSerializer)
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
+# # добавление услуги в заявку
+# #@swagger_auto_schema(method='post', request_body=PlantSerializer)
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
 def add_plant_to_collection(request, id):
     print("add pl to coll", id)
 
@@ -355,14 +369,12 @@ def add_plant_to_collection(request, id):
     return Response(serializer.data)
     
 
-
-
-# список препаратов (заявок)
+# # список препаратов (заявок)
+# # @permission_classes([IsAuthenticated])
+# #@swagger_auto_schema(method='get')
 # @permission_classes([IsAuthenticated])
-#@swagger_auto_schema(method='get')
-@permission_classes([IsAuthenticated])
-@authentication_classes([BasicAuthentication])
-@api_view(['GET'])
+# @authentication_classes([BasicAuthentication])
+# @api_view(['GET'])
 def get_collections(request, format=None):
 
     token = get_access_token(request)
@@ -398,12 +410,12 @@ def get_collections(request, format=None):
         return Response("Для админов нет доступа для просмотра коллекций")
 
 
-# информация о препарате (заявке)
+# # информация о препарате (заявке)
+# # @permission_classes([IsAuthenticated])
+# #@swagger_auto_schema(method='get')
 # @permission_classes([IsAuthenticated])
-#@swagger_auto_schema(method='get')
-@permission_classes([IsAuthenticated])
-@authentication_classes([BasicAuthentication])
-@api_view(['GET'])
+# @authentication_classes([BasicAuthentication])
+# @api_view(['GET'])
 def get_collection(request, id, format=None):
     token = get_access_token(request)
     if not token:
@@ -450,9 +462,8 @@ def get_collection(request, id, format=None):
     #     return Response("У данного пользователя нет препарата с таким id")
 
 
-
-@api_view(['DELETE'])
-@authentication_classes([BasicAuthentication])
+# @api_view(['DELETE'])
+# @authentication_classes([BasicAuthentication])
 def delete_collection(request, id, format=None):
 
     collection = get_object_or_404(Collection, collection_id=id)
@@ -461,12 +472,10 @@ def delete_collection(request, id, format=None):
     return Response(status=status.HTTP_200_OK)
     
 
-
-
-# удаление препарата-черновика (заявки)
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-@authentication_classes([BasicAuthentication])
+# # удаление препарата-черновика (заявки)
+# @api_view(['DELETE'])
+# @permission_classes([IsAuthenticated])
+# @authentication_classes([BasicAuthentication])
 def delete_editing_collection(request, format=None):
 
     token = get_access_token(request)
@@ -492,11 +501,9 @@ def delete_editing_collection(request, format=None):
     return Response(serializer.data)
 
 
-
-# удаление заболевания из связанного с ним препарата (из м-м)
-
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
+# # удаление заболевания из связанного с ним препарата (из м-м)
+# @api_view(['DELETE'])
+# @permission_classes([IsAuthenticated])
 def delete_plant_from_collection(request, collection_id_r, plant_id_r, format=None):
     print('delete_plant_from_collection')
 
@@ -522,11 +529,11 @@ def delete_plant_from_collection(request, collection_id_r, plant_id_r, format=No
         return Response(f"Объекта выбранного растения для удаления из коллекции не найдено", status = status.HTTP_404_NOT_FOUND)
     
 
-# @permission_classes([AllowAny])
-# @authentication_classes([])
-#@swagger_auto_schema(method='put', request_body=CollectionSerializer)
-@api_view(['PUT'])
-@permission_classes([IsAuthenticated])
+# # @permission_classes([AllowAny])
+# # @authentication_classes([])
+# #@swagger_auto_schema(method='put', request_body=CollectionSerializer)
+# @api_view(['PUT'])
+# @permission_classes([IsAuthenticated])
 def collection_upd_status_to_created(request, id):
     token = get_access_token(request)
     if not token:
@@ -546,11 +553,11 @@ def collection_upd_status_to_created(request, id):
     return Response({'message': 'Успешно обновлен статус коллекции на "Сформирован"'}, status=status.HTTP_200_OK)
     
 
-# @permission_classes([AllowAny])
-# @authentication_classes([])
-#@swagger_auto_schema(method='put', request_body=CollectionSerializer)
-@api_view(['PUT'])
-@permission_classes([IsAuthenticated])
+# # @permission_classes([AllowAny])
+# # @authentication_classes([])
+# #@swagger_auto_schema(method='put', request_body=CollectionSerializer)
+# @api_view(['PUT'])
+# @permission_classes([IsAuthenticated])
 def collection_upd_status_to_editing(request, id):
     token = get_access_token(request)
     if not token:
@@ -569,59 +576,14 @@ def collection_upd_status_to_editing(request, id):
     collection.save()
     return Response({'message': 'Успешно обновлен статус коллекции на "Черновик"'}, status=status.HTTP_200_OK)
 
-
-# #@swagger_auto_schema(method='put', request_body=DrugSerializer)
-# @api_view(['PUT'])
-# @permission_classes([IsManager])
-# @authentication_classes([])
-# def drug_update_status_admin(request, id):
-#     if not Medical_drug.objects.filter(id=id).exists():
-#         return Response(f"Препарата с таким id не существует")
-    
-#     STATUSES = [0, 1, 2, 3, 4]
-#     request_st = request.data["status"]
-
-#     if request_st not in STATUSES:
-#         return Response("Статус не корректен")
-    
-#     drug = Medical_drug.objects.get(id=id)
-#     drug_st = drug.status
-#     print("drug_st =", drug_st)
-
-#     if request_st == 2 or request_st == 3:
-#         drug.status = request_st
-#         drug.save()
-
-#         serializer = DrugSerializer(drug, many=False)
-#         return Response(serializer.data)
-#     else:
-#         return Response("Изменение статуса невозможно")
     
 
-
-
-
-
-# Connect to our Redis instance
-session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
-
-
-#@swagger_auto_schema(method='get')
-@api_view(['GET'])
-# @permission_classes([AllowAny])
-# @authentication_classes([BasicAuthentication])
-def get_users(request,format=None):
-    users = CustomUser.objects.all()
-    serializer = UserSerializer(users, many=True)
-    return Response(serializer.data)
-
-
-# информация о препарате (заявке)
+# # информация о препарате (заявке)
+# # @permission_classes([IsAuthenticated])
+# #@swagger_auto_schema(method='get')
 # @permission_classes([IsAuthenticated])
-#@swagger_auto_schema(method='get')
-@permission_classes([IsAuthenticated])
-@authentication_classes([BasicAuthentication])
-@api_view(['GET'])
+# @authentication_classes([BasicAuthentication])
+# @api_view(['GET'])
 def get_recommendation(request, id_rec, format=None):
     token = get_access_token(request)
     if not token:
@@ -660,6 +622,50 @@ def get_recommendation(request, id_rec, format=None):
     else:
         return Response("Нет доступа к данным")
             
+
+
+# #@swagger_auto_schema(method='get')
+# @api_view(['GET'])
+# # @permission_classes([AllowAny])
+# # @authentication_classes([BasicAuthentication])
+def get_users(request,format=None):
+    users = CustomUser.objects.all()
+    serializer = UserSerializer(users, many=True)
+    return Response(serializer.data)
+
+
+
+
+# #@swagger_auto_schema(method='put', request_body=DrugSerializer)
+# @api_view(['PUT'])
+# @permission_classes([IsManager])
+# @authentication_classes([])
+# def drug_update_status_admin(request, id):
+#     if not Medical_drug.objects.filter(id=id).exists():
+#         return Response(f"Препарата с таким id не существует")
+    
+#     STATUSES = [0, 1, 2, 3, 4]
+#     request_st = request.data["status"]
+
+#     if request_st not in STATUSES:
+#         return Response("Статус не корректен")
+    
+#     drug = Medical_drug.objects.get(id=id)
+#     drug_st = drug.status
+#     print("drug_st =", drug_st)
+
+#     if request_st == 2 or request_st == 3:
+#         drug.status = request_st
+#         drug.save()
+
+#         serializer = DrugSerializer(drug, many=False)
+#         return Response(serializer.data)
+#     else:
+#         return Response("Изменение статуса невозможно")
+
+
+
+
 
 # #@swagger_auto_schema(method='put')
 # @api_view(['PUT'])

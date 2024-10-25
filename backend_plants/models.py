@@ -50,9 +50,20 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 #----------------------------------------------------------------------------------------------------------------
 
-class AdminUser(CustomUser):
-    is_admin = models.BooleanField(default=True, verbose_name="Является ли пользователь админом?")
+class AdminUser(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(("email адрес"), unique=True)
+    username = models.CharField(max_length=30, default='', verbose_name="Имя пользователя")
+    password = models.TextField(max_length=256, verbose_name="Пароль")    
+    is_staff = models.BooleanField(default=False, verbose_name="Является ли пользователь менеджером?")
+    is_superuser = models.BooleanField(default=False, verbose_name="Является ли пользователь суперюзером?")
 
+    is_active = models.BooleanField(default=True)
+    groups = models.ManyToManyField(Group, verbose_name=("groups"), blank=True, related_name="admin_user_groups")
+    user_permissions = models.ManyToManyField(Permission, blank=True, related_name="admin_user_permissions")
+
+    USERNAME_FIELD = 'email'
+    # REQUIRED_FIELDS = ['username']
+    objects =  NewUserManager()
     class Meta:
         db_table = 'AdminUser'
         managed = True
@@ -120,7 +131,6 @@ class Plant(models.Model):
     image_url = models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото растения')
     general_info = models.CharField(verbose_name='Описание растения', max_length=255)
     properties = models.JSONField(verbose_name='Характеристики растения')
-    moderator = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='moderator', blank=True, null=True,  db_column='user_id')
     STATUSES = [
         ('a', 'active'),
         ('d', 'delited')
