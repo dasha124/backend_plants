@@ -38,7 +38,7 @@ from backend_plants.minio import add_pic
 # Connect to our Redis instance
 
 ###########   включиииииить потом при настройке авторизации !!!!!!!!!!
-# session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
 def get_session_id(request):
     session = request.COOKIES.get('session_id')
@@ -53,10 +53,10 @@ def get_session_id(request):
     return session
 
 
-# #@swagger_auto_schema(method='post',request_body=UserRegisterSerializer)
-# @api_view(["POST"])
-# @permission_classes([AllowAny])
-# @authentication_classes([])
+#@swagger_auto_schema(method='post',request_body=UserRegisterSerializer)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@authentication_classes([])
 def register(request):
     # Ensure username and passwords are posted is properly
     serializer = UserRegisterSerializer(data=request.data)
@@ -74,10 +74,10 @@ def register(request):
     return Response(message, status=status.HTTP_201_CREATED)
     
 
-# #@swagger_auto_schema(method='post',request_body=UserLoginSerializer)
-# @api_view(["POST"])
-# @permission_classes([AllowAny])
-# @authentication_classes([])
+#@swagger_auto_schema(method='post',request_body=UserLoginSerializer)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@authentication_classes([])
 def login_view(request):
     # Проверка входных данных
     serializer = UserLoginSerializer(data=request.data)
@@ -118,9 +118,9 @@ def login_view(request):
 
     return response
     
-# #@swagger_auto_schema(method='POST')
-# @api_view(["POST"])
-# @permission_classes([AllowAny])
+#@swagger_auto_schema(method='POST')
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def check(request):
     access_token = get_access_token(request)
     print("check = ", access_token)
@@ -136,8 +136,8 @@ def check(request):
     return Response(user_data, status=status.HTTP_200_OK)
 
 
-# @api_view(['POST'])
-# @permission_classes([AllowAny])
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def logout_view(request):
    
     access_token = get_access_token(request)
