@@ -26,6 +26,7 @@ class NewUserManager(BaseUserManager):
 #----------------------------------------------------------------------------------------------------------------
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
+    user_id = models.AutoField(primary_key=True, db_column='user_id')
     email = models.EmailField(("email адрес"), unique=True)
     username = models.CharField(max_length=30, default='', verbose_name="Имя пользователя")
     password = models.TextField(max_length=256, verbose_name="Пароль")    
@@ -49,26 +50,36 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     
 
 #----------------------------------------------------------------------------------------------------------------
+class AdminUser(CustomUser):
+    admin_id = models.AutoField(primary_key=True, db_column='admin_id')
 
-class AdminUser(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(("email адрес"), unique=True)
-    username = models.CharField(max_length=30, default='', verbose_name="Имя пользователя")
-    password = models.TextField(max_length=256, verbose_name="Пароль")    
-    is_staff = models.BooleanField(default=False, verbose_name="Является ли пользователь менеджером?")
-    is_superuser = models.BooleanField(default=False, verbose_name="Является ли пользователь суперюзером?")
-
-    is_active = models.BooleanField(default=True)
-    groups = models.ManyToManyField(Group, verbose_name=("groups"), blank=True, related_name="admin_user_groups")
-    user_permissions = models.ManyToManyField(Permission, blank=True, related_name="admin_user_permissions")
-
-    USERNAME_FIELD = 'email'
-    # REQUIRED_FIELDS = ['username']
-    objects =  NewUserManager()
     class Meta:
         db_table = 'AdminUser'
         managed = True
         verbose_name = 'Администратор'
         verbose_name_plural = 'Администраторы'
+
+
+# class AdminUser(AbstractBaseUser, PermissionsMixin):
+#     admin_id = models.AutoField(primary_key=True, db_column='admin_id')
+#     email = models.EmailField(("email адрес"), unique=True)
+#     username = models.CharField(max_length=30, default='', verbose_name="Имя пользователя")
+#     password = models.TextField(max_length=256, verbose_name="Пароль")    
+#     is_staff = models.BooleanField(default=True, verbose_name="Является ли пользователь менеджером?")
+#     is_superuser = models.BooleanField(default=True, verbose_name="Является ли пользователь суперюзером?")
+
+#     is_active = models.BooleanField(default=True)
+#     groups = models.ManyToManyField(Group, verbose_name=("groups"), blank=True, related_name="admin_user_groups")
+#     user_permissions = models.ManyToManyField(Permission, blank=True, related_name="admin_user_permissions")
+
+#     USERNAME_FIELD = 'email'
+#     # REQUIRED_FIELDS = ['username']
+#     objects =  NewUserManager()
+#     class Meta:
+#         db_table = 'AdminUser'
+#         managed = True
+#         verbose_name = 'Администратор'
+#         verbose_name_plural = 'Администраторы'
 
 
 #----------------------------------------------------------------------------------------------------------------
@@ -272,9 +283,9 @@ class Action(models.Model):
     action_id = models.AutoField(primary_key=True, db_column='action_id')
     action_name = models.CharField(verbose_name='Название действия', max_length=50)
 
-    # 0 - добавление
-    # 1 - изменение
-    # 2 - удаление
+    # 1 - добавление
+    # 2 - изменение
+    # 3 - удаление
 
     def __str__(self):
         return self.action_name

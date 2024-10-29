@@ -17,9 +17,14 @@ class IsAuthenticated(BasePermission):
             return False
 
         try:
+            print("CustomUser.objects.get(id=payload['user_id'])", id)    
             user = CustomUser.objects.get(user_id=payload["user_id"])
-        except Exception as e:
-            return False
+        except CustomUser.DoesNotExist:
+            try:
+                admin_user = AdminUser.objects.get(admin_id=payload["user_id"])
+            except Exception as e:
+                return False
+            return admin_user.is_active
 
         return user.is_active
 
@@ -35,15 +40,17 @@ class IsManager(BasePermission):
             payload = get_jwt_payload(token)
         except Exception as e:
             return False
-
+        
         try:
-            # user = CustomUser.objects.get(user_id=payload["user_id"])
-            user = AdminUser.objects.get(id=payload["user_id"])
-            print(user.is_superuser)
+            print("/class IsManager payload = ", payload)
+            user = CustomUser.objects.get(user_id=payload["user_id"])
+            print("/class IsManager user", user)
+            # user = AdminUser.objects.get(admin_id=payload["user_id"])
+            # print(user.is_superuser)
         except Exception as e:
-            print("EEEEErrrrrrrrrrrrrrrrrrr")
+            print(f"Admin with {user.user_id} does nt ex , perm.IsManager")
             return False
-
+        print("user", user, "is admin =", user.is_superuser)
         return user.is_superuser
     
 

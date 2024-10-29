@@ -58,6 +58,7 @@ urlpatterns = [
    # path(r'api/get_users/', views.get_users, name='get_users'),
 
    path(r'api/register/', views.register, name="register"),
+   path(r'api/register_admin/', views.register_admin, name="register_admin"),
    path(r'api/login/',  views.login_view, name='login'),
    path(r'api/logout/', views.logout_view, name='logout'),
    path(r'api/check/', views.check, name='check'),

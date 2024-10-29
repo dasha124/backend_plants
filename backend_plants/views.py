@@ -53,6 +53,25 @@ def get_session_id(request):
     return session
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def register_admin(request):
+    # Ensure username and passwords are posted is properly
+    serializer = AdminRegisterSerializer(data=request.data)
+
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # Create admin
+    admin = serializer.save()
+    message = {
+        'сообщение': 'Админ успешно зарегистрирован',
+        'admin_id': admin.admin_id
+    }
+
+    return Response(message, status=status.HTTP_201_CREATED)
+
 #@swagger_auto_schema(method='post',request_body=UserRegisterSerializer)
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -68,7 +87,7 @@ def register(request):
     user = serializer.save()
     message = {
         'сообщение': 'Пользователь успешно зарегистрирован',
-        'user_id': user.id
+        'user_id': user.user_id
     }
 
     return Response(message, status=status.HTTP_201_CREATED)
@@ -81,18 +100,20 @@ def register(request):
 def login_view(request):
     # Проверка входных данных
     serializer = UserLoginSerializer(data=request.data)
+    print("req", serializer )
     if not serializer.is_valid():
-        print(serializer.data)
+        print("not valid",serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # Аутентификация пользователя
     user = authenticate(request, **serializer.validated_data)
+    print("проверка",user)
     if user is None:
         message = {"сообщение": "Пользователь не найден"}
         return Response(message, status=status.HTTP_401_UNAUTHORIZED)
 
     # Создание токена доступа
-    access_token = create_access_token(user.id)
+    access_token = create_access_token(user.user_id)
 
     # Сохранение данных пользователя в кеше
     user_data = {
@@ -166,16 +187,18 @@ def get_plants(request, format=None):
     plant_name_r = request.GET.get('plant_name')
     collectionID = 0
     token = get_access_token(request)
-    if token != 'undefined':
+    # print("ищем токен ----", token, type(token))
+    if token not in ['undefined', 'None']:
+    # if token !=None:
         payload = get_jwt_payload(token)
         user_id = payload["user_id"]
 
         try:
-            curr_user = CustomUser.objects.get(user_id = user_id)
+            curr_user = CustomUser.objects.get(user_id= user_id)
         except CustomUser.DoesNotExist:
             curr_user = None
         try:
-            admin_user = AdminUser.objects.get(user_id = user_id)
+            admin_user = AdminUser.objects.get(admin_id = user_id)
         except AdminUser.DoesNotExist:
             admin_user = None
         print("uuuuuuu", curr_user)
@@ -261,30 +284,105 @@ def get_plant(request, id, format=None):
         serializer = PlantSerializer(plant)
         return Response(serializer.data)
 
-
+def safe_get(data_dict, key, default=None):
+# """Возвращает первый элемент списка по ключу или default, если ключ пуст или не существует."""
+    return data_dict.get(key)[0] if data_dict.get(key) else default
 # # добавление нового растения (услуги)
-# #@swagger_auto_schema(method='post',request_body=PlantSerializer)
-# @api_view(['POST'])
-# @permission_classes([IsManager])
+#@swagger_auto_schema(method='post',request_body=PlantSerializer)
+@api_view(['POST'])
+@permission_classes([IsManager])
 def add_new_plant(request, format=None):
-
-    data = request.POST.dict()
-    image_file = request.FILES.get('image')
+    # print("request user =", request.user, request.user.id)
+    data=request.POST
+    try:
+        plant = Plant.objects.get(plant_name=data['plant_name'])
+        return Response({"message": "Растение с таким названием уже существует в БД"})
     
-    # TODO, чтобы работать со ссылкой изображения 
-    # if image_file:
-    #     image_data = b64encode(image_file.read()).decode('utf-8')
-    #     data['image'] = image_data
+    except Plant.DoesNotExist:
+        token = get_access_token(request)
+        if not token:
+            return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        payload = get_jwt_payload(token)
+        user_id = payload["user_id"]
+        print("user", user_id)
 
-    serializer = PlantSerializer(data=data)
-    if serializer.is_valid():
-        serializer.save()
-        pic_result = add_pic(serializer, image_file)
-        # Если в результате вызова add_pic результат - ошибка, возвращаем его.
-        if 'error' in pic_result.data:    
-            return pic_result  
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # print("data ser 0",data)
+        image_file = request.FILES.get('image_url')
+        image_url = image_file if image_file else None
+        # print("img url =", type(image_url))
+
+        formatted_data = {
+        'plant_name': data['plant_name'],  # Получаем первое значение
+        'plant_class': int(safe_get(data, 'plant_class', [0])),  # Приводим к int
+        'plant_subclass': int(safe_get(data, 'plant_subclass', [None])) if safe_get(data, 'plant_subclass') else None,  # Установим None, если пусто
+        'general_info': data['general_info'], 
+        'properties': json.loads(data['properties']),
+        }
+
+        
+        # Process plant class
+        plant_class_name = data.get("plant_class")
+        plant_class_id = None
+        if plant_class_name:
+            try:
+                plant_class, created = Plant_Class.objects.get_or_create(class_name=plant_class_name)
+                last_plant = Plant.objects.last()
+                if last_plant is not None:
+                # Проверяем, существует ли plant_id в этом объекте
+                    plant_id = getattr(last_plant, 'plant_id', None)  # безопасно добавить возможность вернуть None
+                    if plant_id is not None:
+                        print("Последний plant_id:", plant_id)
+                        formatted_data['plant_id'] = plant_id + 1
+                    else:
+                        print("Поле plant_id не существует в данной модели.")
+                else:
+                    print("Нет объектов в таблице Plant_Class.")
+                plant_class_id = plant_class.plant_class_id
+                formatted_data['plant_class'] = plant_class_id
+                print(f"Using Plant Class - ID: {plant_class_id}, Name: {plant_class_name}")
+            except Exception as e:
+                print(f"Error while getting/creating Plant Class: {e}")
+        # print("data ser 1",data)
+        # Process plant subclass
+        plant_subclass_name = formatted_data.get("plant_subclass")
+        plant_subclass_id = None
+        if plant_subclass_name:
+            try:
+                plant_subclass, created = Plant_Subclass.objects.get_or_create(subclass_name=plant_subclass_name)
+                plant_subclass_id = plant_subclass.plant_subclass_id
+                formatted_data['plant_subclass'] = plant_subclass_id
+                print(f"Using Plant Subclass - ID: {plant_subclass_id}, Name: {plant_subclass_name}")
+            except Exception as e:
+                print(f"Error while getting/creating Plant Subclass: {e}")
+
+        final_data = {
+        'plant_id': formatted_data.get('plant_id'),  # Сначала добавим plant_id
+        }
+
+        # Затем добавьте остальные ключи и значения
+        final_data.update(formatted_data)
+
+
+        serializer = PlantSerializer(data=final_data)
+        # print("serial 0 =", serializer)
+        if serializer.is_valid():
+            # serializer.save()
+            new_plant_instance = serializer.save()
+            # print("new_plant_instance =", type(new_plant_instance))
+            pic_result = add_pic(new_plant_instance, image_file)
+
+            # if 'error' in pic_result.data:
+            #     print("ERRRRRR")    
+            #     return pic_result  
+            # return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # print("ERRRRRR")
+            plant_id_new = final_data.get('plant_id')
+            admin_user = AdminUser.objects.get(admin_id=user_id)
+            interaction = Interaction.objects.create(action_id=1, plant_id=plant_id_new, admin=admin_user)
+            interaction.save()  
+            return Response({"message": "Растение успешно добавлено в БД"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 # # обновление информации о заболевании (услуге)

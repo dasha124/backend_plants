@@ -31,18 +31,46 @@ class InteractionSerializer(serializers.ModelSerializer):
 
 
 class PlantSerializer(serializers.ModelSerializer):
-    plant_class_name = serializers.SerializerMethodField()
-    plant_subclass_name = serializers.SerializerMethodField()
+    # plant_class = serializers.SerializerMethodField()
+    # plant_subclass = serializers.SerializerMethodField()
 
     class Meta:
         model = Plant
-        fields= ["plant_id", "plant_name", "plant_class_name", "plant_subclass_name", "image_url", "general_info", "properties"]
-
-    def get_plant_class_name(self, obj):
+        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "image_url", "general_info", "properties"]
+        # fields= ["plant_id", "plant_name", "plant_class_id", "plant_subclass_id", "image_url", "general_info", "properties"]
+    # extra_kwargs = {
+    #         'plant_name': {'required': True},
+    #         'general_info': {'required': False},
+    #         'properties': {'required': False},
+    #     }
+    def get_plant_id(self, obj):
+        return obj.plant_id
+    def get_plant_name(self, obj):
+        return obj.plant_name
+    def get_plant_class(self, obj):
         return obj.plant_class.class_name if obj.plant_class else None
     
-    def get_plant_subclass_name(self, obj):
+    def get_plant_subclass(self, obj):
         return obj.plant_subclass.subclass_name if obj.plant_subclass else None
+    
+    def create(self, validated_data):
+        plant_class_name = validated_data.pop('plant_class')
+        plant_subclass_name = validated_data.pop('plant_subclass', None)
+
+        # Получаем или создаем Plant_Class
+        plant_class, created = Plant_Class.objects.get_or_create(class_name=plant_class_name)
+
+        # Получаем или создаем Plant_Subclass, если оно предоставлено
+        plant_subclass = None
+        if plant_subclass_name:
+            plant_subclass, _ = Plant_Subclass.objects.get_or_create(subclass_name=plant_subclass_name, plant_class=plant_class)
+
+        plant = Plant.objects.create(
+            plant_class=plant_class,
+            plant_subclass=plant_subclass,
+            **validated_data
+        )
+        return plant
 
     def with_collection(self, instance):
        representation = super().to_representation(instance)
@@ -96,6 +124,34 @@ class RecommendationsSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = Medical_drug
 #         fields= ['id', 'time_create', 'time_form', 'time_finish', 'user_id', 'status', 'diseases']
+
+class AdminRegisterSerializer(serializers.ModelSerializer):
+    is_staff = serializers.BooleanField(required=False)
+    is_superuser = serializers.BooleanField(required=False)
+
+    class Meta:
+        model = AdminUser
+        fields = ('admin_id', 'email', 'password', 'is_staff', 'is_superuser', 'username')
+        write_only_fields = ('password',)
+        read_only_fields = ('admin_id',)
+
+    def create(self, validated_data):
+        is_staff = validated_data.pop('is_staff', True)
+        is_superuser = validated_data.pop('is_superuser', True)
+
+        admin = AdminUser.objects.create(
+            email=validated_data['email'],
+            username = validated_data['username']
+        )
+
+        admin.set_password(validated_data['password'])
+
+        admin.is_staff = is_staff
+        admin.is_superuser = is_superuser
+
+        admin.save()
+
+        return admin
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
