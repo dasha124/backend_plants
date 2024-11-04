@@ -38,19 +38,23 @@ urlpatterns = [
    path(r'api/plants/add_plant/', views.add_new_plant, name='add_new_plant'), # (post) раньше назыв /disease/post/
    path(r'api/plants/<int:id>/update_plant/', views.update_plant, name='update_plant'), # (put)
    path(r'api/plants/<int:id>/delete_plant/', views.delete_plant, name='delete_plant'), # (del)
-   path(r'api/plants/<int:id_plant>/<int:id_collection>/add_plant_to_collection/', views.add_plant_to_collection, name='add_plant_to_collection'), # (post)
+   path(r'api/plants/<int:id>/add_plant_to_collection/', views.add_plant_to_collection, name='add_plant_to_collection'), # (post)
 
 
    # для избранных коллекций растений (=заявок)
    path(r'api/collections/', views.get_collections, name='get_collections'),
+   path(r'api/collections/deleted_collections/', views.get_deleted_collections, name='get_deleted_collections'),
    path(r'api/collections/<int:id>/', views.get_collection, name='get_collection'),
+   path(r'api/collections/<int:id>/update/', views.update_collection, name='update_collection'),
    path(r'api/collections/<int:id>/delete/', views.delete_collection,name='delete_collection'),
    path(r'api/collections/delete_editing_collection/', views.delete_editing_collection,name='delete_editing_collection'),
    path(r'api/collections/<int:id_collection>/<int:id_plant>/delete_plant_from_collection/', views.delete_plant_from_collection, name='delete_plant_from_colln'),
-   path(r'api/collections/<int:id>/update_st_user/', views.collection_upd_status_to_created,name='collection_update_status_user'), #put - сформировать заявку=коллекцию
-   path(r'api/collections/<int:id>/update_st_user/', views.collection_upd_status_to_editing,name='collection_upd_status_to_editing'), #put - статус заявки=черновик
+   path(r'api/collections/update_st_user_to_create/', views.collection_upd_status_to_created,name='collection_update_status_user'), #put - сформировать заявку=коллекцию
+   path(r'api/collections/<int:id>/update_st_user_to_edit/', views.collection_upd_status_to_editing,name='collection_upd_status_to_editing'), #put - статус заявки=черновик
    #path(r'api/collections/<int:id>/edit/', views.edit_collection,name='edit_collection'), #put - заявки=черновик/ поменять статус и сразу открыть в окне для корзины
+    path(r'api/collections/<int:id>/update_st_user_to_create_from_del/', views.collection_upd_status_to_created_from_del,name='collection_upd_status_to_created_from_del'), #put - сформировать заявку=коллекцию
    path(r'api/get_users/', views.get_users, name='get_users'),
+   path(r'api/get_admins/', views.get_admins, name='get_admins'),
 
    # для рекомендаций растений (=заявок)
    # path(r'api/recommendations/', views.get_recommendations, name='get_recommendations'),  -  это не надо смотреть юзикам, по сути этого нет, просто список idшек

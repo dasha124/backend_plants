@@ -1,0 +1,18 @@
+Для загрузки фотографии при добавлении новой акции или изменении существующей будем принимать файл с фотографией,
+сохранять его в minio в баскете logo и хранить в базе данных в виде пути до объекта. 
+Создадим файл stocks/minio.py 
+и напишем функцию add_pic, которая принимает объект(акцию) 
+и файл с фотографией логотипа компании, и добавляет этот файл в баскет logo.
+
+sudo service redis stop
+
+sudo kill -9 $(sudo lsof -t -i:80)
+
+sudo MINIO_ROOT_USER=minioadmin MINIO_ROOT_PASSWORD=minioadmin ./minio server /mnt/data --console-address ":9001"
+
+Удалить все папки pycache
+Удалить все файлы миграции (в папке migrations должен оставаться только файл init.py)
+Удалить все таблицы из базы, она должна быть полностью пустой
+python manage.py migrate --run-syncdb (синхронизирует приложение с бд, создает служебные таблицы)
+python manage.py makemigrations <название вашего приложения>
+python manage.py migrate <название вашего приложения>

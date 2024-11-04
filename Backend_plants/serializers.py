@@ -80,8 +80,8 @@ class PlantSerializer(serializers.ModelSerializer):
 
 class CollectionSerializer(serializers.ModelSerializer):
 
-    plant = PlantSerializer(read_only = True, many=True, source='includes_plants')
-    user_id = serializers.CharField(source='user.username', read_only=True)
+    # includes_plants = PlantSerializer(many=True, read_only=True)
+    # user_id = serializers.CharField(source='user.username', read_only=True)
     
     class Meta:
         model = Collection
@@ -99,6 +99,13 @@ class CollectionsSerializer(serializers.ModelSerializer):
         model = Collection
         exclude = ['includes_plants']
 
+class CollectionPlantSerializer(serializers.ModelSerializer):
+    collection_name = serializers.CharField(source='collection.collection_name', read_only=True)
+    plant = PlantSerializer(read_only=True)
+
+    class Meta:
+        model = CollectionPlant
+        fields = ['collection_plant_id', 'collection_name', 'plant', 'date_add', 'time_add']
 
 class RecommendationSerializer(serializers.ModelSerializer):
 
@@ -192,6 +199,11 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['user_id', 'email', 'is_superuser']
+
+class AdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdminUser
+        fields = ['admin_id', 'email', 'is_superuser']
 
         # def get_fields(self):
         #     new_fields = OrderedDict()

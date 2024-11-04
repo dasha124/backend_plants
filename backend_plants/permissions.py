@@ -4,6 +4,28 @@ from backend_plants.jwt_tokens import get_jwt_payload, get_access_token
 from backend_plants.models import CustomUser, AdminUser
 
 
+class IsUser(BasePermission):
+    def has_permission(self, request, view):
+        token = get_access_token(request)
+
+        if token is None:
+            return False
+
+        try:
+            payload = get_jwt_payload(token)
+        except Exception as e:
+            return False
+
+        try:
+            # print("CustomUser.objects.get(id=payload['user_id'])", id)    
+            user = CustomUser.objects.get(user_id=payload["user_id"])
+        
+        except Exception as e:
+            return False
+
+
+        return not(user.is_superuser)
+
 class IsAuthenticated(BasePermission):
     def has_permission(self, request, view):
         token = get_access_token(request)
@@ -17,7 +39,7 @@ class IsAuthenticated(BasePermission):
             return False
 
         try:
-            print("CustomUser.objects.get(id=payload['user_id'])", id)    
+            # print("CustomUser.objects.get(id=payload['user_id'])", id)    
             user = CustomUser.objects.get(user_id=payload["user_id"])
         except CustomUser.DoesNotExist:
             try:

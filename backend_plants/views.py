@@ -31,13 +31,11 @@ from django.core.cache import cache
 from base64 import b64encode
 from django.core.files.base import ContentFile
 import requests
-from backend_plants.minio import add_pic
+from backend_plants.minio import *
 # from drf_yasg.utils import swagger_auto_schema
 
 
 # Connect to our Redis instance
-
-###########   включиииииить потом при настройке авторизации !!!!!!!!!!
 session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
 def get_session_id(request):
@@ -179,7 +177,6 @@ def logout_view(request):
 
 
 # список растений (услуг)
-# @api_view(['GET'])
 @permission_classes([AllowAny])
 #@swagger_auto_schema(method='GET')
 @api_view(['GET'])
@@ -296,6 +293,7 @@ def add_new_plant(request, format=None):
     data=request.POST
     try:
         plant = Plant.objects.get(plant_name=data['plant_name'])
+        # plant = get_object_or_404(Plant, plant_name=data['plant_name'])
         return Response({"message": "Растение с таким названием уже существует в БД"})
     
     except Plant.DoesNotExist:
@@ -313,8 +311,8 @@ def add_new_plant(request, format=None):
 
         formatted_data = {
         'plant_name': data['plant_name'],  # Получаем первое значение
-        'plant_class': int(safe_get(data, 'plant_class', [0])),  # Приводим к int
-        'plant_subclass': int(safe_get(data, 'plant_subclass', [None])) if safe_get(data, 'plant_subclass') else None,  # Установим None, если пусто
+        'plant_class': data['plant_class'],  # Приводим к int
+        'plant_subclass': (data['plant_subclass'], None) if data['plant_subclass'] else None,  # Установим None, если пусто
         'general_info': data['general_info'], 
         'properties': json.loads(data['properties']),
         }
@@ -358,8 +356,6 @@ def add_new_plant(request, format=None):
         final_data = {
         'plant_id': formatted_data.get('plant_id'),  # Сначала добавим plant_id
         }
-
-        # Затем добавьте остальные ключи и значения
         final_data.update(formatted_data)
 
 
@@ -387,92 +383,158 @@ def add_new_plant(request, format=None):
 
 # # обновление информации о заболевании (услуге)
 # #@swagger_auto_schema(method='put', request_body=PlantSerializer)
-# @api_view(['PUT'])
-# @permission_classes([IsManager])
-# @authentication_classes([])
+@api_view(['PUT'])
+@permission_classes([IsManager])
+@authentication_classes([])
 def update_plant(request, id, format=None):
-    plant = get_object_or_404(Plant, plant_id=id)
 
-    # TODO, чтобы работать со ссылкой изображения 
-    image_file = request.FILES.get('image')
-    # if image_file:
-    #     # Создание и сохранение изображения в формате base64
-    #     image_data = b64encode(image_file.read()).decode('utf-8')
-    #     plant.image = image_data
-
-    # Обновление других полей растения
-
-    if image_file:
-        pic_result = add_pic(plant, image_file)
-        if 'error' in pic_result.data:
-            return pic_result
-    plant.plant_name = request.data.get('plant_name', plant.plant_name)
-    plant.plant_class.class_name = request.data.get('plant_class_name', plant.plant_class.class_name)
-    plant.general_info = request.data.get('general_info', plant.general_info)
-    plant.properties = request.data.get('properties', plant.properties)
-
-    plant.save()
-    
-    return Response(status=status.HTTP_200_OK)
-
-
-# # удаление информации о заболевании (услуге)
-# @api_view(['DELETE'])
-# @permission_classes([IsManager])
-# @authentication_classes([BasicAuthentication])
-def delete_plant(request, id, format=None):
-    print('delete', id)
-    plant = get_object_or_404(Plant, plant_id=id)
-    plant.status="d"
-    plant.save()
-    print(f"################---------   delete_plant --- plant {plant.plant_id}   ----- by moderator { request.user}")
-    moderation_action = Interaction.objects.create(
-        moderator=request.user,  # Модератор - это текущий админ
-        plant=plant.plant_id,             # Растение, которое удаляется
-        action=2     # Действие - удаление
-    )
-    return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-# # добавление услуги в заявку
-# #@swagger_auto_schema(method='post', request_body=PlantSerializer)
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-def add_plant_to_collection(request, id):
-    print("add pl to coll", id)
-
-    if not Plant.objects.filter(plant_id=id).exists():
-        return Response(f"Растения с таким id не найдено")
+    data=request.POST
+    try:
+        plant = Plant.objects.get(plant_id=id)
+        print("изначальное растение: ", plant)
+         # Обновление других полей растения
+    except Plant.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
     
     token = get_access_token(request)
     if not token:
         return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
-
-
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
     print("user", user_id)
+
+    image_file = request.FILES.get('image_url')
+
+    final_data = {
+        'plant_id': id,  # Получаем первое значение
+        'plant_name': data['plant_name'],  # Получаем первое значение
+        'plant_class': data['plant_class'],  # Приводим к int
+        'plant_subclass': (data['plant_subclass'], None) if data['plant_subclass'] else None,  # Установим None, если пусто
+        'general_info': data['general_info'], 
+        'properties': json.loads(data['properties']),
+    }
+    plant_class_name = data.get("plant_class")
+    plant_class_id = None
+    if plant_class_name:
+        try:
+            plant_class, created = Plant_Class.objects.get_or_create(class_name=plant_class_name)
+            
+            plant_class_id = plant_class.plant_class_id
+            final_data['plant_class'] = plant_class_id
+            print(f"Using Plant Class - ID: {plant_class_id}, Name: {plant_class_name}")
+        except Exception as e:
+            print(f"Error while getting/creating Plant Class: {e}")
+    # print("data ser 1",data)
+    # Process plant subclass
+    plant_subclass_name = final_data.get("plant_subclass")
+    plant_subclass_id = None
+    if plant_subclass_name:
+        try:
+            plant_subclass, created = Plant_Subclass.objects.get_or_create(subclass_name=plant_subclass_name)
+            plant_subclass_id = plant_subclass.plant_subclass_id
+            final_data['plant_subclass'] = plant_subclass_id
+            print(f"Using Plant Subclass - ID: {plant_subclass_id}, Name: {plant_subclass_name}")
+        except Exception as e:
+            print(f"Error while getting/creating Plant Subclass: {e}")
+
+
+    serializer = PlantSerializer(instance=plant, data=final_data, partial=True)
+    print("serial 0 =", serializer)
+    if serializer.is_valid():
+        # serializer.save()
+        new_plant_instance = serializer.save()
+        # print("new_plant_instance =", type(new_plant_instance))
+        pic_result = add_pic(new_plant_instance, image_file)
+
+        plant_id_new = final_data.get('plant_id')
+        admin_user = AdminUser.objects.get(admin_id=user_id)
+        interaction = Interaction.objects.create(action_id=2, plant_id=plant_id_new, admin=admin_user)
+        interaction.save()  
+        return Response({"message": "Растение успешно обновлено в БД"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# # удаление информации о заболевании (услуге)
+@api_view(['DELETE'])
+@permission_classes([IsManager])
+@authentication_classes([])
+def delete_plant(request, id, format=None):
+    print('delete', id)
+    try:
+        plant = Plant.objects.get(plant_id=id)
+        # print("изначальное растение: ", plant)
+        # Обновление других полей растения
+    except Plant.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    token = get_access_token(request)
+    if not token:
+        return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+    print("user", user_id)
+
+    plant.status="d"
+    plant.save()
+    # print(f"################---------   delete_plant --- plant {plant.plant_id}   ----- by moderator { request.user}")
+    admin_user = AdminUser.objects.get(admin_id=user_id)
+    interaction = Interaction.objects.create(action_id=3, plant_id=id, admin=admin_user)
+    interaction.save()  
+    # return Response({"message": "Растение успешно обновлено в БД"}, status=status.HTTP_201_CREATED)
+    return Response({"message": "Растение имеет статус 'd = deleted'"}, status=status.HTTP_204_NO_CONTENT)
+
+
+# # добавление услуги в заявку
+# #@swagger_auto_schema(method='post', request_body=PlantSerializer)
+@api_view(['POST'])
+@permission_classes([IsUser])
+def add_plant_to_collection(request, id):
+    # print("add pl to coll", id)
+
+    token = get_access_token(request)
+    if not token:
+        return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+    # print("user", user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
+
+    if not Plant.objects.filter(plant_id=id, status='a').exists():
+        return Response({"error": "Растения с таким id не найдено"}, status=status.HTTP_404_NOT_FOUND)
     
     plant = Plant.objects.get(plant_id=id)
-    collection = Collection.objects.get(status=0, user_id=user_id)
+    try:
+        collection = Collection.objects.get(status=0, user=user_id)
+        collection_id = collection.collection_id
+        # return Response({"error": "Растение уже в черновой коллекции"})
+    except Collection.DoesNotExist:
+        collection = Collection.objects.create(user=user)
+        collection.collection_name = "Название коллекции"
+        collection_id = collection.collection_id
+        recommendation_1 = Recommendation.objects.create()
+        # recommendation_id = recommendation_1.recommendation_id
+        collection.recommendation = recommendation_1
+        collection.save()
 
-    if collection is None:
-        collection = Collection.objects.create(user_id=user_id)
-        recommendation = Recommendation.objects.create(user_id=user_id)
 
+    try:
+        plant_in_col = CollectionPlant.objects.get(collection_id=collection_id, plant_id=id)
+        return Response({"error": "Растение уже в черновой коллекции"})
+    except CollectionPlant.DoesNotExist:
+        plant_in_col = CollectionPlant.objects.create(collection_id=collection_id, plant_id=id)
+
+        
     collection.includes_plants.add(plant)
     collection.save()
 
-    serializer = PlantSerializer(collection.includes_plants, many=True)
-    return Response(serializer.data)
+    serializer = CollectionPlantSerializer(plant_in_col)
+    return Response({"message": "Растение добавлено в черновую коллекцию", "collection": serializer.data}, status=status.HTTP_200_OK)
     
 
 # # список препаратов (заявок)
-# # @permission_classes([IsAuthenticated])
 # #@swagger_auto_schema(method='get')
-# @permission_classes([IsAuthenticated])
-# @authentication_classes([BasicAuthentication])
-# @api_view(['GET'])
+@api_view(['GET'])
+@permission_classes([IsUser])
 def get_collections(request, format=None):
 
     token = get_access_token(request)
@@ -485,36 +547,31 @@ def get_collections(request, format=None):
 
     curr_user = CustomUser.objects.get(user_id = user_id)
     print("cccccccccccurrr uuser =", curr_user)
+    user = get_object_or_404(CustomUser, user_id=user_id)
 
     collection_name_r = request.GET.get('collection_name') ## поиск коллекции по названию
     # time_create= request.GET.get('time_create')
     status_r= request.GET.get('status') ## фильтрация по статусу
 
-    if not curr_user.is_superuser:
-        # обычный пользователь может просматривать все коллекции
-        collections= Collection.objects.order_by('-time_create').order_by('-status').filter(user_id=user_id)
-        if collection_name_r:
-            collections = collections.filter(
-                Q(collection_name__icontains = collection_name_r.lower())
-            )
-        if status_r is not None:
-            collections = collections.filter(
-                Q(status = status_r)
-            )
 
-        serializer = CollectionsSerializer(collections, many=True)
-        return Response(serializer.data)
-    else:
-        return Response("Для админов нет доступа для просмотра коллекций")
+    collections= Collection.objects.order_by('-time_create').filter(user=user_id, status=1)
+    if collection_name_r:
+        collections = collections.filter(
+            Q(collection_name__icontains = collection_name_r.lower())
+        )
+    if status_r is not None:
+        collections = collections.filter(
+            Q(status = status_r)
+        )
+
+    serializer = CollectionsSerializer(collections, many=True)
+    return Response(serializer.data)
 
 
-# # информация о препарате (заявке)
-# # @permission_classes([IsAuthenticated])
-# #@swagger_auto_schema(method='get')
-# @permission_classes([IsAuthenticated])
-# @authentication_classes([BasicAuthentication])
-# @api_view(['GET'])
-def get_collection(request, id, format=None):
+@api_view(['GET'])
+@permission_classes([IsUser])
+def get_deleted_collections(request, format=None):
+
     token = get_access_token(request)
     if not token:
         # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -525,99 +582,145 @@ def get_collection(request, id, format=None):
 
     curr_user = CustomUser.objects.get(user_id = user_id)
     print("cccccccccccurrr uuser =", curr_user)
+    user = get_object_or_404(CustomUser, user_id=user_id)
 
-    collection = get_object_or_404(Collection, collection_id=id)
-    serializer = CollectionSerializer(collection)
-
-    if not curr_user.is_superuser:
-        if collection:
-            if collection.user_id == user_id:
-                return Response(serializer.data)
-    else:
-        return Response("Нет доступа к данным")
-            
+    collection_name_r = request.GET.get('collection_name') ## поиск коллекции по названию
+    # time_create= request.GET.get('time_create')
+    status_r= request.GET.get('status') ## фильтрация по статусу
 
 
-    # token = get_access_token(request)
-    # if not token:
-    #     # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
-    #     return Response('Нет токена')
-    
-    # payload = get_jwt_payload(token)
-    # user_id = payload["user_id"]
+    collections= Collection.objects.order_by('-time_create').filter(user=user_id, status=2)
+    if collection_name_r:
+        collections = collections.filter(
+            Q(collection_name__icontains = collection_name_r.lower())
+        )
+    if status_r is not None:
+        collections = collections.filter(
+            Q(status = status_r)
+        )
 
-    # try:
-    #     drug = Medical_drug.objects.get(id=id)
-    # except Medical_drug.DoesNotExist:
-    #     return Response('Нет токена')
-    
-    # if drug.user_id_id==user_id:
-   
-    #     serializer = DrugSerializer(drug)
+    serializer = CollectionsSerializer(collections, many=True)
+    return Response(serializer.data)
 
-    #     return Response(serializer.data)
-    # else:
-    #     return Response("У данного пользователя нет препарата с таким id")
-
-
-# @api_view(['DELETE'])
-# @authentication_classes([BasicAuthentication])
-def delete_collection(request, id, format=None):
-
-    collection = get_object_or_404(Collection, collection_id=id)
-    collection.status = 2
-    collection.save()
-    return Response(status=status.HTTP_200_OK)
-    
-
-# # удаление препарата-черновика (заявки)
-# @api_view(['DELETE'])
-# @permission_classes([IsAuthenticated])
-# @authentication_classes([BasicAuthentication])
-def delete_editing_collection(request, format=None):
+# # информация о препарате (заявке)
+# #@swagger_auto_schema(method='get')
+@api_view(['GET'])
+@permission_classes([IsUser])
+def get_collection(request, id, format=None):
 
     token = get_access_token(request)
     if not token:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-    if not Collection.objects.filter(status=0).exists():
-        return Response(f"Коллекции со статусом 'Черновик' не существует")
+        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response('Нет токена')
     
-
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
 
     curr_user = CustomUser.objects.get(user_id = user_id)
-    print("cccccccccccurrr uuser =", curr_user)
+    print("cccccccccccurrr uuser =", curr_user, user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
+
     
-    
-    editing_collection = Collection.objects.get(status=0, user_id=user_id)
-    editing_collection.status=2
-    editing_collection.save()
-    editing_collection.includes_plants.clear()
-    serializer = CollectionSerializer(editing_collection, many=False)
-    return Response(serializer.data)
+    try:
+        collection = Collection.objects.get(collection_id=id)
+    except Collection.DoesNotExist:
+        return Response(f"Коллекция с id={id} не найдена", status=status.HTTP_404_NOT_FOUND)
+    serializer = CollectionSerializer(collection)
+
+    if collection.user == user:
+        return Response(serializer.data)
+    else:
+        return Response("Нет доступа к данным")
 
 
-# # удаление заболевания из связанного с ним препарата (из м-м)
-# @api_view(['DELETE'])
-# @permission_classes([IsAuthenticated])
-def delete_plant_from_collection(request, collection_id_r, plant_id_r, format=None):
-    print('delete_plant_from_collection')
+@api_view(['DELETE'])
+@permission_classes([IsUser])
+def delete_collection(request, id, format=None):
 
     token = get_access_token(request)
     if not token:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
+        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response('Нет токена')
     
-    if not Collection.objects.filter(collection_id=collection_id_r).exists():
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+
+    curr_user = CustomUser.objects.get(user_id = user_id)
+    print("cccccccccccurrr uuser =", curr_user, user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
+
+    try:
+        collection = Collection.objects.get(collection_id=id)
+    except Collection.DoesNotExist:
+        return Response(f"Коллекция с id={id} не найдена", status=status.HTTP_404_NOT_FOUND)
+
+    if collection.user == user:
+        collection.status = 2
+        collection.save()
+        return Response(f"Коллекция с id={id} успешно удалена", status=status.HTTP_200_OK)
+    else:
+        return Response("Нет доступа к данным коллекции")
+    
+
+# # удаление коллекции-черновика (заявки)
+@api_view(['DELETE'])
+@permission_classes([IsUser])
+def delete_editing_collection(request, format=None):
+
+    token = get_access_token(request)
+    if not token:
+        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response('Нет токена')
+    
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+
+    curr_user = CustomUser.objects.get(user_id = user_id)
+    print("cccccccccccurrr uuser =", curr_user, user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
+
+    if not Collection.objects.filter(status=0).exists():
+        return Response(f"Коллекции со статусом 'Черновик' не существует")
+    
+    try:
+        editing_collection = Collection.objects.get(status=0, user=user)
+    except Collection.DoesNotExist:
+        return Response(f"Коллекции со статусом 'Черновик' для пользователя {user} не существует")
+    
+    editing_collection.status=2
+    editing_collection.save()
+    editing_collection.includes_plants.clear()
+    # serializer = CollectionSerializer(editing_collection, many=False)
+    # return Response(serializer.data)
+    return Response(f"Коллекция со статусом 'Черновик' для пользователя {user} удалена")
+
+
+# # удаление растения из связанной с ним коллекции (из м-м)
+@api_view(['DELETE'])
+@permission_classes([IsUser])
+def delete_plant_from_collection(request, id_collection, id_plant, format=None):
+    
+    token = get_access_token(request)
+    if not token:
+        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response('Нет токена')
+    
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+
+    curr_user = CustomUser.objects.get(user_id = user_id)
+    print("cccccccccccurrr uuser =", curr_user, user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
+    
+    if not Collection.objects.filter(collection_id=id_collection).exists():
         return Response(f"Коллекции с таким id не существует")
-    if not Plant.objects.filter(plant_id=plant_id_r).exists():
+    if not Plant.objects.filter(plant_id=id_plant).exists():
         return Response(f"Растения с таким id не существует")
     
     
-    plant = Plant.objects.get(plant_id=plant_id_r)
+    plant = Plant.objects.get(plant_id=id_plant)
     print("plant =", plant)
-    collection = Collection.objects.get(collection_id=collection_id_r)
+    collection = Collection.objects.get(collection_id=id_collection)
     print("collection =", collection)
     if collection.includes_plants.exists():
         collection.includes_plants.remove(plant)
@@ -627,62 +730,146 @@ def delete_plant_from_collection(request, collection_id_r, plant_id_r, format=No
         return Response(f"Объекта выбранного растения для удаления из коллекции не найдено", status = status.HTTP_404_NOT_FOUND)
     
 
-# # @permission_classes([AllowAny])
-# # @authentication_classes([])
 # #@swagger_auto_schema(method='put', request_body=CollectionSerializer)
-# @api_view(['PUT'])
-# @permission_classes([IsAuthenticated])
-def collection_upd_status_to_created(request, id):
+@api_view(['PUT'])
+@permission_classes([IsUser])
+def collection_upd_status_to_created(request):
+
     token = get_access_token(request)
     if not token:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
-        
+        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response('Нет токена')
+    
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
 
-    if not Collection.objects.filter(collection_id=id).exists():
-        return Response(f"Коллекции с таким id не существует")
-    
-    # Подключение к асинхронному веб-сервису
-    
-    collection = Collection.objects.get(collection_id=id)
-    collection.status=1
-    collection.save()
-    return Response({'message': 'Успешно обновлен статус коллекции на "Сформирован"'}, status=status.HTTP_200_OK)
-    
+    curr_user = CustomUser.objects.get(user_id = user_id)
+    print("cccccccccccurrr uuser =", curr_user, user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
 
-# # @permission_classes([AllowAny])
-# # @authentication_classes([])
+    if not Collection.objects.filter(user=user, status=0).exists():
+        return Response(f"Коллекции-черновика для пользователя {user} не существует")
+    
+    collection = Collection.objects.get(user=user, status=0)
+    collection.status = 1
+    collection.save()
+    return Response(f'Успешно обновлен статус коллекции на "Сформирован" для пользователя {user}', status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+@permission_classes([IsUser])
+def collection_upd_status_to_created_from_del(request, id):
+
+    token = get_access_token(request)
+    if not token:
+        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response('Нет токена')
+    
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+
+    curr_user = CustomUser.objects.get(user_id = user_id)
+    print("cccccccccccurrr uuser =", curr_user, user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
+
+    if not Collection.objects.filter(user=user, status=2).exists():
+        return Response(f"Удаленных коллекций для пользователя {user} не существует")
+    
+    try:
+        collection = Collection.objects.get(user=user, collection_id=id, status=2)
+    except Collection.DoesNotExist:
+        return Response(f"Ошибка восстановления коллекции {id} для пользователя {user}")
+    collection.status = 1
+    collection.save()
+    return Response(f'Успешно обновлен статус коллекции на "Сформирован" для пользователя {user}', status=status.HTTP_200_OK)
+
+
 # #@swagger_auto_schema(method='put', request_body=CollectionSerializer)
-# @api_view(['PUT'])
-# @permission_classes([IsAuthenticated])
+@api_view(['PUT'])
+@permission_classes([IsUser])
 def collection_upd_status_to_editing(request, id):
+    
     token = get_access_token(request)
     if not token:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
-        
+        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response('Нет токена')
+    
     payload = get_jwt_payload(token)
     user_id = payload["user_id"]
 
-    if not Collection.objects.filter(id=id).exists():
-        return Response(f"Коллекции с таким id не существует")
-    
-    # Подключение к асинхронному веб-сервису
-    
-    collection = Collection.objects.get(collection_id=id)
-    collection.status=0
-    collection.save()
-    return Response({'message': 'Успешно обновлен статус коллекции на "Черновик"'}, status=status.HTTP_200_OK)
+    curr_user = CustomUser.objects.get(user_id = user_id)
+    print("curr user =", curr_user, user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
 
-    
+    if not Collection.objects.filter(collection_id=id, user=user, status=1).exists():
+        return Response(f"Активной коллекции с таким id не существует для пользователя {user}")
+    if not Collection.objects.filter(collection_id=id, user=user, status=0).exists():
+        return Response(f"Удаленной коллекции с таким id не существует для пользователя {user}")
+    else:
+        try: 
+            collection_0 = Collection.objects.get(collection_id=id, user=user, status=0)
+        except Collection.DoesNotExist:
+            collection = Collection.objects.get(collection_id=id, user=user)
+            collection.status=0
+            collection.save()
+            return Response(f'Успешно обновлен статус коллекции {id} на "Черновик" для пользователя {user}', status=status.HTTP_200_OK)
+        # если есть какая то-коллекция-черновик, то мы ее переводим в сформированную,
+        # а коллекцию с пришедшим id переводим по команде на редактирование
+        collection_0.status = 1
+        collection_0.save()
+        collection = Collection.objects.get(collection_id=id, user=user)
+        collection.status = 0
+        collection.save()
+        return Response(f'Успешно обновлен статус коллекции {id} на "Черновик" для пользователя {user}', status=status.HTTP_200_OK)
 
-# # информация о препарате (заявке)
-# # @permission_classes([IsAuthenticated])
+ 
+@api_view(['POST'])
+@permission_classes([IsUser])
+def update_collection(request, id):
+
+    token = get_access_token(request)
+    if not token:
+        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response('Нет токена')
+
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+
+    curr_user = CustomUser.objects.get(user_id = user_id)
+    print("cccccccccccurrr uuser =", curr_user, user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
+
+    try:
+        collection = Collection.objects.get(user=user, collection_id=id)
+        print("Изначальная коллекция: ")
+        print(collection)
+        print()
+    except Collection.DoesNotExist:
+        return Response(f"Коллекции c id={id} для пользователя {user} не существует", status=status.HTTP_404_NOT_FOUND)
+    
+    data=request.POST
+    image_file = request.FILES.get('image_url')
+
+    final_data = {
+        'collection_id': id,  # Получаем первое значение
+        'collection_name': data['collection_name'],  # Получаем первое значение
+    }
+    serializer = CollectionSerializer(instance=collection, data=final_data, partial=True)
+    print("serial 0 =", serializer)
+    if serializer.is_valid():
+        # serializer.save()
+        new_coll_instance = serializer.save()
+        # print("new_plant_instance =", type(new_plant_instance))
+        pic_result = add_pic_coll(new_coll_instance, image_file)
+        return Response({"message": "Растение успешно обновлено в БД"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+ 
+
 # #@swagger_auto_schema(method='get')
-# @permission_classes([IsAuthenticated])
-# @authentication_classes([BasicAuthentication])
-# @api_view(['GET'])
-def get_recommendation(request, id_rec, format=None):
+@api_view(['GET'])
+@permission_classes([IsUser])
+def get_recommendation(request, id, format=None):
     token = get_access_token(request)
     if not token:
         # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -694,7 +881,7 @@ def get_recommendation(request, id_rec, format=None):
     curr_user = CustomUser.objects.get(user_id= user_id)
     print("cccccccccccurrr uuser =", curr_user)
 
-    recommendation = get_object_or_404(Recommendation, recommendation_id=id_rec)
+    recommendation = get_object_or_404(Recommendation, recommendation_id=id)
     serializer = RecommendationSerializer(recommendation)
 
     if not curr_user.is_superuser:
@@ -706,7 +893,7 @@ def get_recommendation(request, id_rec, format=None):
             # recommended_plants = algorithm_to_get_recommendations(collection.includes_plants.all())
 
                     # Здесь добавляем растения с id = 1 и 2 пока по умолчанию, потом добавим мл по рекомендашкам сюда
-            default_plants = Plant.objects.filter(plant_id__in=[1, 2])
+            default_plants = Plant.objects.filter(plant_id__in=[1, 81, 82, 83])
             base_weight = len(default_plants)
             for index, plant in enumerate(default_plants):
                 weight = base_weight - index
@@ -726,11 +913,20 @@ def get_recommendation(request, id_rec, format=None):
 # @api_view(['GET'])
 # # @permission_classes([AllowAny])
 # # @authentication_classes([BasicAuthentication])
+
+#выводит ВСЕХ юзиков, в том числе админов
+@api_view(['GET'])
 def get_users(request,format=None):
     users = CustomUser.objects.all()
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
 
+@api_view(['GET'])
+def get_admins(request,format=None):
+    admins = AdminUser.objects.all()
+    serializer = AdminSerializer(admins, many=True)
+    print(serializer)
+    return Response(serializer.data)
 
 
 
