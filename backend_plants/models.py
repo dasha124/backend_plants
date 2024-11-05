@@ -28,7 +28,7 @@ class NewUserManager(BaseUserManager):
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     user_id = models.AutoField(primary_key=True, db_column='user_id')
     email = models.EmailField(("email адрес"), unique=True)
-    username = models.CharField(max_length=30, default='', verbose_name="Имя пользователя")
+    username = models.CharField(max_length=30, default='', verbose_name="Имя пользователя", unique=True)
     password = models.TextField(max_length=256, verbose_name="Пароль")    
     is_staff = models.BooleanField(default=False, verbose_name="Является ли пользователь менеджером?")
     is_superuser = models.BooleanField(default=False, verbose_name="Является ли пользователь суперюзером?")
@@ -37,7 +37,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     groups = models.ManyToManyField(Group, verbose_name=("groups"), blank=True, related_name="custom_user_groups")
     user_permissions = models.ManyToManyField(Permission, blank=True, related_name="custom_user_permissions")
 
-    USERNAME_FIELD = 'email'
+    # USERNAME_FIELD = 'email'
+    USERNAME_FIELD = 'username'
     # REQUIRED_FIELDS = ['username']
 
     def __str__(self):
@@ -133,12 +134,29 @@ class Plant_Subclass(models.Model):
 
 
 #----------------------------------------------------------------------------------------------------------------
+class Plant_Type(models.Model):
+    plant_type_id = models.AutoField(primary_key=True, db_column='plant_type_id')
+    type_name = models.CharField(max_length=100, verbose_name='Название подкласса растения')
+    plant_subclass = models.ForeignKey(Plant_Subclass, verbose_name='Название подкласса растения', related_name='types', null=True, blank=True, on_delete=models.CASCADE, db_column='plant_subclass_id')
+
+    def __str__(self):
+        return self.type_name
+
+    class Meta:
+        db_table = 'Plant_Type'
+        managed = True
+        verbose_name = 'Вид растения'
+        verbose_name_plural = 'Виды растений'
+
+
+#----------------------------------------------------------------------------------------------------------------
 
 class Plant(models.Model):
     plant_id = models.AutoField(primary_key=True, db_column='plant_id')
     plant_name = models.CharField(verbose_name='Название растения', max_length=150)
     plant_class = models.ForeignKey(Plant_Class, verbose_name='Название класса растения', on_delete=models.CASCADE, db_column='plant_class_id')
     plant_subclass = models.ForeignKey(Plant_Subclass, verbose_name='Название подкласса растения', null=True, blank=True, on_delete=models.SET_NULL,  db_column='plant_subclass_id')
+    plant_type = models.ForeignKey(Plant_Type, verbose_name='Название вида растения', on_delete=models.CASCADE,  db_column='plant_type_id')
     image_url = models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото растения')
     general_info = models.CharField(verbose_name='Описание растения', max_length=255)
     properties = models.JSONField(verbose_name='Характеристики растения')
@@ -157,6 +175,9 @@ class Plant(models.Model):
     
     def subclass_name(self):
         return self.plant_subclass.subclass_name
+    
+    def type_name(self):
+        return self.plant_type.type_name
     
     def image64(self):
         # print("1")

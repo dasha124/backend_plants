@@ -310,10 +310,11 @@ def add_new_plant(request, format=None):
         # print("img url =", type(image_url))
 
         formatted_data = {
-        'plant_name': data['plant_name'],  # Получаем первое значение
-        'plant_class': data['plant_class'],  # Приводим к int
+        'plant_name': data['plant_name'],
+        'plant_class': data['plant_class'],
         'plant_subclass': (data['plant_subclass'], None) if data['plant_subclass'] else None,  # Установим None, если пусто
-        'general_info': data['general_info'], 
+        'plant_type': data['plant_type'],
+        'general_info': data['general_info'],
         'properties': json.loads(data['properties']),
         }
 
@@ -341,17 +342,37 @@ def add_new_plant(request, format=None):
             except Exception as e:
                 print(f"Error while getting/creating Plant Class: {e}")
         # print("data ser 1",data)
-        # Process plant subclass
-        plant_subclass_name = formatted_data.get("plant_subclass")
+        
+        plant_subclass_name = formatted_data.get("plant_subclass")[0]
+        print("input plant_subclass_name =", plant_subclass_name)
         plant_subclass_id = None
         if plant_subclass_name:
             try:
-                plant_subclass, created = Plant_Subclass.objects.get_or_create(subclass_name=plant_subclass_name)
-                plant_subclass_id = plant_subclass.plant_subclass_id
-                formatted_data['plant_subclass'] = plant_subclass_id
-                print(f"Using Plant Subclass - ID: {plant_subclass_id}, Name: {plant_subclass_name}")
+                # Ensure the plant_class_id is available before creating subclass
+                if 'plant_class' in formatted_data:
+                    plant_class_instance = Plant_Class.objects.get(plant_class_id=formatted_data['plant_class'])
+                    plant_subclass, created = Plant_Subclass.objects.get_or_create(
+                        subclass_name=plant_subclass_name,
+                        plant_class=plant_class_instance  # Set the plant class reference
+                    )
+                    plant_subclass_id = plant_subclass.plant_subclass_id
+                    formatted_data['plant_subclass'] = int(plant_subclass_id)
+                    print(f"Using Plant Subclass - ID: {plant_subclass_id}, Name: {plant_subclass_name}")
+                else:
+                    print("Plant class is not defined, cannot create subclass.")
             except Exception as e:
                 print(f"Error while getting/creating Plant Subclass: {e}")
+        
+        plant_type_name = formatted_data.get("plant_type")
+        plant_type_id = None
+        if plant_type_name:
+            try:
+                plant_type, created = Plant_Type.objects.get_or_create(type_name=plant_type_name)
+                plant_type_id = plant_type.plant_type_id
+                formatted_data['plant_type'] = plant_type_id
+                print(f"Using Plant Type - ID: {plant_type_id}, Name: {plant_type_name}")
+            except Exception as e:
+                print(f"Error while getting/creating Plant Type: {e}")
 
         final_data = {
         'plant_id': formatted_data.get('plant_id'),  # Сначала добавим plant_id
@@ -360,7 +381,7 @@ def add_new_plant(request, format=None):
 
 
         serializer = PlantSerializer(data=final_data)
-        # print("serial 0 =", serializer)
+        print("serial 0 =", serializer)
         if serializer.is_valid():
             # serializer.save()
             new_plant_instance = serializer.save()
@@ -406,10 +427,11 @@ def update_plant(request, id, format=None):
     image_file = request.FILES.get('image_url')
 
     final_data = {
-        'plant_id': id,  # Получаем первое значение
-        'plant_name': data['plant_name'],  # Получаем первое значение
-        'plant_class': data['plant_class'],  # Приводим к int
+        'plant_id': id,
+        'plant_name': data['plant_name'],
+        'plant_class': data['plant_class'],
         'plant_subclass': (data['plant_subclass'], None) if data['plant_subclass'] else None,  # Установим None, если пусто
+        'plant_type': data['plant_type'],
         'general_info': data['general_info'], 
         'properties': json.loads(data['properties']),
     }
@@ -436,7 +458,17 @@ def update_plant(request, id, format=None):
             print(f"Using Plant Subclass - ID: {plant_subclass_id}, Name: {plant_subclass_name}")
         except Exception as e:
             print(f"Error while getting/creating Plant Subclass: {e}")
-
+        
+    plant_type_name = final_data.get("plant_type")
+    plant_type_id = None
+    if plant_type_name:
+        try:
+            plant_type, created = Plant_Type.objects.get_or_create(type_name=plant_type_name)
+            plant_type_id = plant_type.plant_type_id
+            final_data['plant_type'] = plant_type_id
+            print(f"Using Plant Type - ID: {plant_type_id}, Name: {plant_type_name}")
+        except Exception as e:
+            print(f"Error while getting/creating Plant Type: {e}")
 
     serializer = PlantSerializer(instance=plant, data=final_data, partial=True)
     print("serial 0 =", serializer)

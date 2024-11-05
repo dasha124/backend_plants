@@ -17,6 +17,10 @@ class PlantSubclassSerializer(serializers.ModelSerializer):
         model = Plant_Subclass
         fields = ['plant_subclass_id', 'subclass_name']
 
+class PlantTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Plant_Type
+        fields = ['plant_type_id', 'type_name']
 
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -36,7 +40,7 @@ class PlantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Plant
-        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "image_url", "general_info", "properties"]
+        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url", "general_info", "properties"]
         # fields= ["plant_id", "plant_name", "plant_class_id", "plant_subclass_id", "image_url", "general_info", "properties"]
     # extra_kwargs = {
     #         'plant_name': {'required': True},
@@ -190,7 +194,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return user
     
 class UserLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
+    username = serializers.CharField(required=True)
+    # email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True)
 
     
