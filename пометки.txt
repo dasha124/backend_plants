@@ -6,6 +6,8 @@
 
 sudo service redis stop
 
+python manage.py runserver 0.0.0.0:8000
+
 sudo kill -9 $(sudo lsof -t -i:80)
 
 sudo MINIO_ROOT_USER=minioadmin MINIO_ROOT_PASSWORD=minioadmin ./minio server /mnt/data --console-address ":9001"

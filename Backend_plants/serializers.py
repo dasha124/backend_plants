@@ -4,24 +4,49 @@ from backend_plants.models import *
 from rest_framework import serializers
 from collections import OrderedDict
 
+# ------------------------------------------------------------------------------------------------
 
 # растение = услуга
 class PlantClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Class
-        fields = ['class_id', 'class_name']
+        # fields = ['class_id', 'class_name']
+        fields = ['class_name']
 
+class GetPlantClassSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Plant_Class
+        fields = ['class_id', 'class_name']
+        # fields = ['class_name']
+
+# ------------------------------------------------------------------------------------------------
 
 class PlantSubclassSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Subclass
+        fields = ['subclass_name']
+        # fields = ['subclass_name']
+
+class GetPlantSubclassSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Plant_Subclass
         fields = ['plant_subclass_id', 'subclass_name']
+        # fields = ['subclass_name']
+# ------------------------------------------------------------------------------------------------
 
 class PlantTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Type
-        fields = ['plant_type_id', 'type_name']
+        # fields = ['plant_type_id', 'type_name']
+        fields = ['type_name']
 
+class GetPlantTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Plant_Type
+        fields = ['plant_type_id', 'type_name']
+        # fields = ['type_name']
+
+# ------------------------------------------------------------------------------------------------
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Action
@@ -34,10 +59,56 @@ class InteractionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class PlantSerializer(serializers.ModelSerializer):
-    # plant_class = serializers.SerializerMethodField()
-    # plant_subclass = serializers.SerializerMethodField()
+# ------------------------------------------------------------------------------------------------
 
+class PlantSerializer(serializers.ModelSerializer):
+    plant_class = PlantClassSerializer()
+    plant_subclass = PlantSubclassSerializer()
+    plant_type = PlantTypeSerializer()
+
+    class Meta:
+        model = Plant
+        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url", "general_info", "properties"]
+
+    def get_plant_id(self, obj):
+        return obj.plant_id
+    def get_plant_name(self, obj):
+        return obj.plant_name
+    # def get_plant_class(self, obj):
+    #     return obj.plant_class.class_name if obj.plant_class else None
+    
+    # def get_plant_subclass(self, obj):
+    #     return obj.plant_subclass.subclass_name if obj.plant_subclass else None
+    
+    def create(self, validated_data):
+        plant_class_name = validated_data.pop('plant_class')
+        plant_subclass_name = validated_data.pop('plant_subclass', None)
+
+        # Получаем или создаем Plant_Class
+        plant_class, created = Plant_Class.objects.get_or_create(class_name=plant_class_name)
+
+        # Получаем или создаем Plant_Subclass, если оно предоставлено
+        plant_subclass = None
+        if plant_subclass_name:
+            plant_subclass, _ = Plant_Subclass.objects.get_or_create(subclass_name=plant_subclass_name, plant_class=plant_class)
+
+        plant = Plant.objects.create(
+            plant_class=plant_class,
+            plant_subclass=plant_subclass,
+            **validated_data
+        )
+        return plant
+
+    def with_collection(self, instance):
+       representation = super().to_representation(instance)
+       representation['collectionID'] = 0 # добавляем collectionID в сериализованные данные
+       return representation
+
+# ------------------------------------------------------------------------------------------------
+class GetPlantSerializer(serializers.ModelSerializer):
+    # plant_class = GetPlantClassSerializer()
+    # plant_subclass = GetPlantSubclassSerializer()
+    # plant_type = GetPlantTypeSerializer()
     class Meta:
         model = Plant
         fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url", "general_info", "properties"]
@@ -51,11 +122,11 @@ class PlantSerializer(serializers.ModelSerializer):
         return obj.plant_id
     def get_plant_name(self, obj):
         return obj.plant_name
-    def get_plant_class(self, obj):
-        return obj.plant_class.class_name if obj.plant_class else None
+    # def get_plant_class(self, obj):
+    #     return obj.plant_class.class_name if obj.plant_class else None
     
-    def get_plant_subclass(self, obj):
-        return obj.plant_subclass.subclass_name if obj.plant_subclass else None
+    # def get_plant_subclass(self, obj):
+    #     return obj.plant_subclass.subclass_name if obj.plant_subclass else None
     
     def create(self, validated_data):
         plant_class_name = validated_data.pop('plant_class')

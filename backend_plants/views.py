@@ -380,7 +380,7 @@ def add_new_plant(request, format=None):
         final_data.update(formatted_data)
 
 
-        serializer = PlantSerializer(data=final_data)
+        serializer = GetPlantSerializer(data=final_data)
         print("serial 0 =", serializer)
         if serializer.is_valid():
             # serializer.save()
