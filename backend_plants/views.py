@@ -343,7 +343,8 @@ def add_new_plant(request, format=None):
                 print(f"Error while getting/creating Plant Class: {e}")
         # print("data ser 1",data)
         
-        plant_subclass_name = formatted_data.get("plant_subclass")[0]
+        # plant_subclass_name = formatted_data.get("plant_subclass")[0]
+        plant_subclass_name = formatted_data['plant_subclass']
         print("input plant_subclass_name =", plant_subclass_name)
         plant_subclass_id = None
         if plant_subclass_name:
