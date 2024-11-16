@@ -43,7 +43,7 @@ def set_access_token_cookie(response, access_token):
 def set_refresh_token_cookie(response, refresh_token):
     response.set_cookie('refresh_token', refresh_token, expires=REFRESH_TOKEN_LIFETIME, httponly=False)
 
-# !!!!!!!!  он нужен, пока не пон, в чем проблема
+
 def get_jwt_payload(token):
     if isinstance(token, str):
         token = token.encode('utf-8')

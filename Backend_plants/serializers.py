@@ -6,18 +6,17 @@ from collections import OrderedDict
 
 # ------------------------------------------------------------------------------------------------
 
-# растение = услуга
+# растение 
 class PlantClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Class
-        # fields = ['class_id', 'class_name']
         fields = ['class_name']
 
 class GetPlantClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Class
-        fields = ['class_id', 'class_name']
-        # fields = ['class_name']
+        fields = '__all__'
+
 
 # ------------------------------------------------------------------------------------------------
 
@@ -25,26 +24,25 @@ class PlantSubclassSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Subclass
         fields = ['subclass_name']
-        # fields = ['subclass_name']
+
 
 class GetPlantSubclassSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Subclass
-        fields = ['plant_subclass_id', 'subclass_name']
-        # fields = ['subclass_name']
+        fields = '__all__'
+
 # ------------------------------------------------------------------------------------------------
 
 class PlantTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Type
-        # fields = ['plant_type_id', 'type_name']
         fields = ['type_name']
 
 class GetPlantTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Type
         fields = ['plant_type_id', 'type_name']
-        # fields = ['type_name']
+
 
 # ------------------------------------------------------------------------------------------------
 class ActionSerializer(serializers.ModelSerializer):
@@ -74,6 +72,14 @@ class PlantSerializer(serializers.ModelSerializer):
         return obj.plant_id
     def get_plant_name(self, obj):
         return obj.plant_name
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['plant_class'] = representation['plant_class']['class_name']  # Convert plant_class
+        if representation['plant_subclass']:
+            representation['plant_subclass'] = representation['plant_subclass']['subclass_name']  # Convert plant_subclass
+        representation['plant_type'] = representation['plant_type']['type_name']  # Convert plant_type
+        return representation
     # def get_plant_class(self, obj):
     #     return obj.plant_class.class_name if obj.plant_class else None
     
@@ -106,18 +112,10 @@ class PlantSerializer(serializers.ModelSerializer):
 
 # ------------------------------------------------------------------------------------------------
 class GetPlantSerializer(serializers.ModelSerializer):
-    # plant_class = GetPlantClassSerializer()
-    # plant_subclass = GetPlantSubclassSerializer()
-    # plant_type = GetPlantTypeSerializer()
     class Meta:
         model = Plant
         fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url", "general_info", "properties"]
-        # fields= ["plant_id", "plant_name", "plant_class_id", "plant_subclass_id", "image_url", "general_info", "properties"]
-    # extra_kwargs = {
-    #         'plant_name': {'required': True},
-    #         'general_info': {'required': False},
-    #         'properties': {'required': False},
-    #     }
+
     def get_plant_id(self, obj):
         return obj.plant_id
     def get_plant_name(self, obj):
@@ -154,10 +152,6 @@ class GetPlantSerializer(serializers.ModelSerializer):
 
 
 class CollectionSerializer(serializers.ModelSerializer):
-
-    # includes_plants = PlantSerializer(many=True, read_only=True)
-    # user_id = serializers.CharField(source='user.username', read_only=True)
-    
     class Meta:
         model = Collection
         fields= "__all__"
@@ -167,7 +161,6 @@ class CollectionsSerializer(serializers.ModelSerializer):
 
     plant = PlantSerializer(read_only = True, many=True, source='includes_plants')
     user_id = serializers.CharField(source='user.username', read_only=True)
-    # moderator = serializers.CharField(source='moderator.username', read_only=True)
 
     
     class Meta:
@@ -199,13 +192,6 @@ class RecommendationsSerializer(serializers.ModelSerializer):
         model = Recommendation
         exclude = ['includes_plants']
 
-
-# class DrugSerializer_get(serializers.ModelSerializer):
-#     diseases = DiseaseSerializer(read_only = True, many=True) # type: ignore
-    
-#     class Meta:
-#         model = Medical_drug
-#         fields= ['id', 'time_create', 'time_form', 'time_finish', 'user_id', 'status', 'diseases']
 
 class AdminRegisterSerializer(serializers.ModelSerializer):
     is_staff = serializers.BooleanField(required=False)
@@ -266,7 +252,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     
 class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
-    # email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True)
 
     

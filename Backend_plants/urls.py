@@ -32,12 +32,16 @@ urlpatterns = [
    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
    path('admin/', admin.site.urls),
 
+
    # для растений (=услуг)
+   path(r'api/plants/classes/', views.get_plant_classes, name='get_plant_classes'), # (get)
+   path(r'api/plants/subclasses/', views.get_plant_subclasses, name='get_plant_subclasses'), # (get)
    path(r'api/plants/', views.get_plants, name='get_plants'), # (get)
    path(r'api/plants/<int:id>/', views.get_plant, name='get_plant'), # (get)
    path(r'api/plants/add_plant/', views.add_new_plant, name='add_new_plant'), # (post) раньше назыв /disease/post/
    path(r'api/plants/<int:id>/update_plant/', views.update_plant, name='update_plant'), # (put)
    path(r'api/plants/<int:id>/delete_plant/', views.delete_plant, name='delete_plant'), # (del)
+   path(r'api/plants/<int:id>/obj_delete_plant/', views.obj_delete_plant, name='obj_delete_plant'), # (del)
    path(r'api/plants/<int:id>/add_plant_to_collection/', views.add_plant_to_collection, name='add_plant_to_collection'), # (post)
 
 
@@ -52,10 +56,12 @@ urlpatterns = [
    path(r'api/collections/update_st_user_to_create/', views.collection_upd_status_to_created,name='collection_update_status_user'), #put - сформировать заявку=коллекцию
    path(r'api/collections/<int:id>/update_st_user_to_edit/', views.collection_upd_status_to_editing,name='collection_upd_status_to_editing'), #put - статус заявки=черновик
    #path(r'api/collections/<int:id>/edit/', views.edit_collection,name='edit_collection'), #put - заявки=черновик/ поменять статус и сразу открыть в окне для корзины
-    path(r'api/collections/<int:id>/update_st_user_to_create_from_del/', views.collection_upd_status_to_created_from_del,name='collection_upd_status_to_created_from_del'), #put - сформировать заявку=коллекцию
+   path(r'api/collections/<int:id>/update_st_user_to_create_from_del/', views.collection_upd_status_to_created_from_del,name='collection_upd_status_to_created_from_del'), #put - сформировать заявку=коллекцию
+   
+   
    path(r'api/get_users/', views.get_users, name='get_users'),
    path(r'api/get_admins/', views.get_admins, name='get_admins'),
-
+   path(r'api/users/<int:id>/delete/', views.obj_delete_user, name='obj_delete_user'), # (del)
    # для рекомендаций растений (=заявок)
    # path(r'api/recommendations/', views.get_recommendations, name='get_recommendations'),  -  это не надо смотреть юзикам, по сути этого нет, просто список idшек
    path(r'api/recommendarions/<int:id>/', views.get_recommendation, name='get_recommendation'),

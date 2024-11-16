@@ -44,8 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     # 'drf_yasg',
     'corsheaders',
-
-    
+    'storages',
 ]
 
 ACCESS_TOKEN_LIFETIME = 3600
@@ -149,7 +148,7 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 AWS_STORAGE_BUCKET_NAME = 'logo'
 AWS_ACCESS_KEY_ID = 'minioadmin'
 AWS_SECRET_ACCESS_KEY = 'minioadmin'
-AWS_S3_ENDPOINT_URL = 'localhost:9000'
+AWS_S3_ENDPOINT_URL = 'http://192.168.2.108:9000'
 MINIO_USE_SSL = False
 
 TIME_ZONE = 'Europe/Moscow'

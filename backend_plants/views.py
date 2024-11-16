@@ -175,18 +175,60 @@ def logout_view(request):
 
 
 
+@permission_classes([AllowAny])
+@api_view(['GET'])
+def get_plant_classes(request, format=None):
+    plant_classes = Plant_Class.objects.all()
+    serializer = GetPlantClassSerializer(plant_classes, many=True)
+    return Response(serializer.data)
 
-# список растений (услуг)
+
+@permission_classes([AllowAny])
+@api_view(['GET'])
+def get_plant_subclasses(request, format=None):
+    plant_subclasses = Plant_Subclass.objects.all()
+    serializer = GetPlantSubclassSerializer(plant_subclasses, many=True)
+    return Response(serializer.data)
+
+
+# список растений
 @permission_classes([AllowAny])
 #@swagger_auto_schema(method='GET')
 @api_view(['GET'])
 def get_plants(request, format=None):
     plant_name_r = request.GET.get('plant_name')
+    class_name_r = request.GET.get('class_name')
+    subclass_name_r = request.GET.get('subclass_name')
+    type_name_r = request.GET.get('type_name')
+    light_filter = request.GET.get('light') 
     collectionID = 0
     token = get_access_token(request)
-    # print("ищем токен ----", token, type(token))
+
+    plants = Plant.objects.all()
+
+    if plant_name_r:
+        print("plant_name_r =", plant_name_r)
+        plants = plants.filter(
+            Q(plant_name__icontains = plant_name_r.lower())
+        )
+    if class_name_r:
+        print("class_name_r =", class_name_r)
+        plant_class = get_object_or_404(Plant_Class, class_name = class_name_r)
+        plants = plants.filter(plant_class = plant_class.plant_class_id)
+    if subclass_name_r:
+        print("subclass_name_r =", subclass_name_r)
+        plant_subclass = get_object_or_404(Plant_Subclass, subclass_name = subclass_name_r)
+        plants = plants.filter(plant_subclass = plant_subclass.plant_subclass_id)
+    if type_name_r:
+        print("type_name_r =", type_name_r)
+        plant_type = get_object_or_404(Plant_Type, type_name = type_name_r)
+        plants = plants.filter(plant_type = plant_type.plant_type_id)
+    if light_filter:
+        print("light_filter =", light_filter)
+        plants = plants.filter(properties__light__icontains=light_filter)
+
+
     if token not in ['undefined', 'None']:
-    # if token !=None:
         payload = get_jwt_payload(token)
         user_id = payload["user_id"]
 
@@ -200,17 +242,11 @@ def get_plants(request, format=None):
             admin_user = None
         print("uuuuuuu", curr_user)
 
-
-        # try {        #     drug = Medical_drug.objects.get(user_id_id=user_id, status=0)
         if admin_user:
-            print("curr_user.is_superuser")
-            if plant_name_r:
-                plants = Plant.objects.filter(
-                    Q(plant_name__icontains = plant_name_r.lower())
-                )       
-            else:
-                plants = Plant.objects.all()
-                print(plants)
+            # if plant_name_r:
+            #     plants = plants.filter(
+            #         Q(plant_name__icontains = plant_name_r.lower())
+            #     )       
             collectionID = 0 # так то коллекций у админов нет
         # if not admin_user:
         else:
@@ -219,16 +255,11 @@ def get_plants(request, format=None):
                 collectionID = collection.collection_id
             except Collection.DoesNotExist:
                 collectionID = 0
-
-            if plant_name_r:
-                plants = Plant.objects.filter(
-                    Q(status='a') &
-                    Q(plant_name__icontains = plant_name_r.lower())
-                )
-            else:
-                plants = Plant.objects.filter(
-                    Q(status='a')
-                )
+            plants = plants.filter(status='a')
+            # if plant_name_r:
+            #     plants = plants.filter(
+            #         Q(plant_name__icontains = plant_name_r.lower())
+            #     )
 
         serialized_plants = []
         for plant in plants:
@@ -240,34 +271,14 @@ def get_plants(request, format=None):
     # if token == 'undefined':
     else:
         collectionID=0
-        print('here')
-        if plant_name_r: # TODO
-            plants = Plant.objects.filter(
-                Q(status='a') &
-                Q(plant_name__icontains = plant_name_r.lower())
-            )
-            
-            serialized_plants = []
-            for plant in plants:
-                serializer = PlantSerializer(plant)
-                serialized_plants.append(serializer.data)
+        # print('here')
 
-            serialized_plants.append({"collectionID": 0})
-
-            return Response(serialized_plants)
-
-        
-        plants = Plant.objects.filter(
-        Q(status='a')
-        )
-
+        plants = plants.filter(Q(status='a'))
         serialized_plants = []
         for plant in plants:
             serializer = PlantSerializer(plant)
             serialized_plants.append(serializer.data)
-
         serialized_plants.append({"collectionID": 0})
-
         return Response(serialized_plants)
 
 
@@ -282,18 +293,16 @@ def get_plant(request, id, format=None):
         return Response(serializer.data)
 
 def safe_get(data_dict, key, default=None):
-# """Возвращает первый элемент списка по ключу или default, если ключ пуст или не существует."""
+#  первый элемент списка по ключу или default, если ключ пуст или не существует
     return data_dict.get(key)[0] if data_dict.get(key) else default
 # # добавление нового растения (услуги)
 #@swagger_auto_schema(method='post',request_body=PlantSerializer)
 @api_view(['POST'])
 @permission_classes([IsManager])
 def add_new_plant(request, format=None):
-    # print("request user =", request.user, request.user.id)
     data=request.POST
     try:
         plant = Plant.objects.get(plant_name=data['plant_name'])
-        # plant = get_object_or_404(Plant, plant_name=data['plant_name'])
         return Response({"message": "Растение с таким названием уже существует в БД"})
     
     except Plant.DoesNotExist:
@@ -304,10 +313,8 @@ def add_new_plant(request, format=None):
         user_id = payload["user_id"]
         print("user", user_id)
 
-        # print("data ser 0",data)
         image_file = request.FILES.get('image_url')
         image_url = image_file if image_file else None
-        # print("img url =", type(image_url))
 
         formatted_data = {
         'plant_name': data['plant_name'],
@@ -319,7 +326,6 @@ def add_new_plant(request, format=None):
         }
 
         
-        # Process plant class
         plant_class_name = data.get("plant_class")
         plant_class_id = None
         if plant_class_name:
@@ -327,8 +333,7 @@ def add_new_plant(request, format=None):
                 plant_class, created = Plant_Class.objects.get_or_create(class_name=plant_class_name)
                 last_plant = Plant.objects.last()
                 if last_plant is not None:
-                # Проверяем, существует ли plant_id в этом объекте
-                    plant_id = getattr(last_plant, 'plant_id', None)  # безопасно добавить возможность вернуть None
+                    plant_id = getattr(last_plant, 'plant_id', None)
                     if plant_id is not None:
                         print("Последний plant_id:", plant_id)
                         formatted_data['plant_id'] = plant_id + 1
@@ -341,28 +346,25 @@ def add_new_plant(request, format=None):
                 print(f"Using Plant Class - ID: {plant_class_id}, Name: {plant_class_name}")
             except Exception as e:
                 print(f"Error while getting/creating Plant Class: {e}")
-        # print("data ser 1",data)
-        
-        # plant_subclass_name = formatted_data.get("plant_subclass")[0]
+
         plant_subclass_name = formatted_data['plant_subclass']
         print("input plant_subclass_name =", plant_subclass_name)
         plant_subclass_id = None
         if plant_subclass_name:
             try:
-                # Ensure the plant_class_id is available before creating subclass
                 if 'plant_class' in formatted_data:
                     plant_class_instance = Plant_Class.objects.get(plant_class_id=formatted_data['plant_class'])
                     plant_subclass, created = Plant_Subclass.objects.get_or_create(
                         subclass_name=plant_subclass_name,
-                        plant_class=plant_class_instance  # Set the plant class reference
+                        plant_class=plant_class_instance
                     )
                     plant_subclass_id = plant_subclass.plant_subclass_id
                     formatted_data['plant_subclass'] = int(plant_subclass_id)
-                    print(f"Using Plant Subclass - ID: {plant_subclass_id}, Name: {plant_subclass_name}")
+                    print(f"Plant Subclass - ID: {plant_subclass_id}, Name: {plant_subclass_name}")
                 else:
-                    print("Plant class is not defined, cannot create subclass.")
+                    print("Plant class не определен, нельзя создать subclass.")
             except Exception as e:
-                print(f"Error while getting/creating Plant Subclass: {e}")
+                print(f"Ошибка получения/создания Plant Subclass: {e}")
         
         plant_type_name = formatted_data.get("plant_type")
         plant_type_id = None
@@ -380,20 +382,11 @@ def add_new_plant(request, format=None):
         }
         final_data.update(formatted_data)
 
-
         serializer = GetPlantSerializer(data=final_data)
         print("serial 0 =", serializer)
         if serializer.is_valid():
-            # serializer.save()
             new_plant_instance = serializer.save()
-            # print("new_plant_instance =", type(new_plant_instance))
             pic_result = add_pic(new_plant_instance, image_file)
-
-            # if 'error' in pic_result.data:
-            #     print("ERRRRRR")    
-            #     return pic_result  
-            # return Response(serializer.data, status=status.HTTP_201_CREATED)
-            # print("ERRRRRR")
             plant_id_new = final_data.get('plant_id')
             admin_user = AdminUser.objects.get(admin_id=user_id)
             interaction = Interaction.objects.create(action_id=1, plant_id=plant_id_new, admin=admin_user)
@@ -487,7 +480,7 @@ def update_plant(request, id, format=None):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# # удаление информации о заболевании (услуге)
+# удаление информации о растении
 @api_view(['DELETE'])
 @permission_classes([IsManager])
 @authentication_classes([])
@@ -509,12 +502,33 @@ def delete_plant(request, id, format=None):
 
     plant.status="d"
     plant.save()
-    # print(f"################---------   delete_plant --- plant {plant.plant_id}   ----- by moderator { request.user}")
     admin_user = AdminUser.objects.get(admin_id=user_id)
     interaction = Interaction.objects.create(action_id=3, plant_id=id, admin=admin_user)
     interaction.save()  
-    # return Response({"message": "Растение успешно обновлено в БД"}, status=status.HTTP_201_CREATED)
     return Response({"message": "Растение имеет статус 'd = deleted'"}, status=status.HTTP_204_NO_CONTENT)
+
+
+
+# # удаление информации о заболевании (услуге)
+@api_view(['DELETE'])
+@permission_classes([IsManager])
+@authentication_classes([])
+def obj_delete_plant(request, id, format=None):
+    print('delete', id)
+    try:
+        plant = Plant.objects.get(plant_id=id)
+    except Plant.DoesNotExist:
+        return Response(f"Растение {id} не найдено в Базе данных", status=status.HTTP_404_NOT_FOUND)
+
+    token = get_access_token(request)
+    if not token:
+        return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+    print("user", user_id)
+
+    plant.delete()
+    return Response(f"Растение {id} удалено из Базы данных", status=status.HTTP_204_NO_CONTENT)
 
 
 # # добавление услуги в заявку
@@ -961,6 +975,26 @@ def get_admins(request,format=None):
     print(serializer)
     return Response(serializer.data)
 
+
+@api_view(['DELETE'])
+@permission_classes([IsManager])
+@authentication_classes([])
+def obj_delete_user(request, id, format=None):
+    print('delete', id)
+    try:
+        user = CustomUser.objects.get(user_id=id)
+    except CustomUser.DoesNotExist:
+        return Response(f"Пользователя с {id} не найдено в Базе данных", status=status.HTTP_404_NOT_FOUND)
+
+    token = get_access_token(request)
+    if not token:
+        return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+    print("user", user_id)
+
+    user.delete()
+    return Response(f"Пользователь {id} удален из Базы данных", status=status.HTTP_204_NO_CONTENT)
 
 
 # #@swagger_auto_schema(method='put', request_body=DrugSerializer)

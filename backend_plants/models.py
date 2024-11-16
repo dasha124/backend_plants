@@ -61,28 +61,6 @@ class AdminUser(CustomUser):
         verbose_name_plural = 'Администраторы'
 
 
-# class AdminUser(AbstractBaseUser, PermissionsMixin):
-#     admin_id = models.AutoField(primary_key=True, db_column='admin_id')
-#     email = models.EmailField(("email адрес"), unique=True)
-#     username = models.CharField(max_length=30, default='', verbose_name="Имя пользователя")
-#     password = models.TextField(max_length=256, verbose_name="Пароль")    
-#     is_staff = models.BooleanField(default=True, verbose_name="Является ли пользователь менеджером?")
-#     is_superuser = models.BooleanField(default=True, verbose_name="Является ли пользователь суперюзером?")
-
-#     is_active = models.BooleanField(default=True)
-#     groups = models.ManyToManyField(Group, verbose_name=("groups"), blank=True, related_name="admin_user_groups")
-#     user_permissions = models.ManyToManyField(Permission, blank=True, related_name="admin_user_permissions")
-
-#     USERNAME_FIELD = 'email'
-#     # REQUIRED_FIELDS = ['username']
-#     objects =  NewUserManager()
-#     class Meta:
-#         db_table = 'AdminUser'
-#         managed = True
-#         verbose_name = 'Администратор'
-#         verbose_name_plural = 'Администраторы'
-
-
 #----------------------------------------------------------------------------------------------------------------
 
 class User(models.Model):
@@ -106,6 +84,7 @@ class User(models.Model):
 class Plant_Class(models.Model):
     plant_class_id = models.AutoField(primary_key=True, db_column='plant_class_id')
     class_name = models.CharField(max_length=100, verbose_name='Название класса растения')
+    image_url_class = models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото класса растения')
 
     def __str__(self):
         return self.class_name
@@ -121,6 +100,7 @@ class Plant_Class(models.Model):
 class Plant_Subclass(models.Model):
     plant_subclass_id = models.AutoField(primary_key=True, db_column='plant_subclass_id')
     subclass_name = models.CharField(max_length=100, verbose_name='Название подкласса растения')
+    image_url_subclass = models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото подкласса растения')
     plant_class = models.ForeignKey(Plant_Class, verbose_name='Название класса растения', related_name='subclasses', on_delete=models.CASCADE, db_column='plant_class_id')
 
     def __str__(self):
@@ -157,8 +137,8 @@ class Plant(models.Model):
     plant_class = models.ForeignKey(Plant_Class, verbose_name='Название класса растения', on_delete=models.CASCADE, db_column='plant_class_id')
     plant_subclass = models.ForeignKey(Plant_Subclass, verbose_name='Название подкласса растения', null=True, blank=True, on_delete=models.SET_NULL,  db_column='plant_subclass_id')
     plant_type = models.ForeignKey(Plant_Type, verbose_name='Название вида растения', on_delete=models.CASCADE,  db_column='plant_type_id')
-    image_url = models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото растения')
-    general_info = models.CharField(verbose_name='Описание растения', max_length=255)
+    image_url_plant= models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото растения')
+    general_info = models.CharField(verbose_name='Описание растения', max_length=1500)
     properties = models.JSONField(verbose_name='Характеристики растения')
     STATUSES = [
         ('a', 'active'),
@@ -217,7 +197,7 @@ class Recommendation(models.Model):
 class Collection(models.Model):
     collection_id = models.AutoField(primary_key=True, db_column='collection_id')
     collection_name = models.CharField(verbose_name='Название коллекции', max_length=150)
-    image_url = models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото коллекции')
+    image_url_collection = models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото коллекции')
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, default=1, verbose_name='Создатель', db_column='user_id')
     recommendation = models.ForeignKey(Recommendation, on_delete=models.CASCADE, blank=True, null=True,  db_column='recommendation_id')
     includes_plants = models.ManyToManyField(Plant, through='CollectionPlant', null=False)
@@ -307,6 +287,7 @@ class Action(models.Model):
     # 1 - добавление
     # 2 - изменение
     # 3 - удаление
+    # 4 - физическое удаление
 
     def __str__(self):
         return self.action_name
