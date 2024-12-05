@@ -32,6 +32,7 @@ from base64 import b64encode
 from django.core.files.base import ContentFile
 import requests
 from backend_plants.minio import *
+from backend_plants.get_pic_from_minio import *
 # from drf_yasg.utils import swagger_auto_schema
 
 
@@ -370,7 +371,7 @@ def add_new_plant(request, format=None):
         plant_type_id = None
         if plant_type_name:
             try:
-                plant_type, created = Plant_Type.objects.get_or_create(type_name=plant_type_name)
+                plant_type, created = Plant_Type.objects.get_or_create(type_name=plant_type_name, plant_subclass_id=plant_subclass_id)
                 plant_type_id = plant_type.plant_type_id
                 formatted_data['plant_type'] = plant_type_id
                 print(f"Using Plant Type - ID: {plant_type_id}, Name: {plant_type_name}")
@@ -387,7 +388,8 @@ def add_new_plant(request, format=None):
         if serializer.is_valid():
             new_plant_instance = serializer.save()
             pic_result = add_pic(new_plant_instance, image_file)
-            plant_id_new = final_data.get('plant_id')
+            last_plant = Plant.objects.last()
+            plant_id_new = getattr(last_plant, 'plant_id', None)
             admin_user = AdminUser.objects.get(admin_id=user_id)
             interaction = Interaction.objects.create(action_id=1, plant_id=plant_id_new, admin=admin_user)
             interaction.save()  
@@ -1061,3 +1063,13 @@ def obj_delete_user(request, id, format=None):
 #         print(f'Error decoding JSON: {e}')
 #         return Response(data={'message': 'Ошибка декодирования JSON'}, status=status.HTTP_400_BAD_REQUEST)
     
+
+
+# Пример использования:
+@api_view(['GET'])
+def get_image_sizes_from_minio(request, format=None):
+    # plant_list = Plant.objects.filter(plant_id__in = [1, 2])
+    plant_list = Plant.objects.all()
+    sizes = get_image_sizes(plant_list)
+    # print(sizes)
+    return Response(len(sizes))

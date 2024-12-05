@@ -74,6 +74,9 @@ urlpatterns = [
    path(r'api/check/', views.check, name='check'),
 
 
+   path(r'api/from_minio/', views.get_image_sizes_from_minio, name='get_image_sizes_from_minio')
+
+
 
    # path(r'api/async_result/', views.async_result),
 

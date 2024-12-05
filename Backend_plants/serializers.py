@@ -66,7 +66,7 @@ class PlantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Plant
-        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url", "general_info", "properties"]
+        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url_plant", "general_info", "properties"]
 
     def get_plant_id(self, obj):
         return obj.plant_id
@@ -114,7 +114,7 @@ class PlantSerializer(serializers.ModelSerializer):
 class GetPlantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant
-        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url", "general_info", "properties"]
+        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url_plant", "general_info", "properties"]
 
     def get_plant_id(self, obj):
         return obj.plant_id

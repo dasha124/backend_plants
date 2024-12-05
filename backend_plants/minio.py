@@ -18,10 +18,10 @@ def process_file_upload(file_object: InMemoryUploadedFile, client, image_name):
 
 def add_pic(new_plant: Plant, pic):
     client = Minio(           
-            endpoint=settings.AWS_S3_ENDPOINT_URL,
-           access_key=settings.AWS_ACCESS_KEY_ID,
-           secret_key=settings.AWS_SECRET_ACCESS_KEY,
-           secure=settings.MINIO_USE_SSL
+        endpoint=settings.AWS_S3_ENDPOINT_HOST,
+        access_key=settings.AWS_ACCESS_KEY_ID,
+        secret_key=settings.AWS_SECRET_ACCESS_KEY,
+        secure=settings.MINIO_USE_SSL
     )
     print("minio new plant", new_plant)
     
@@ -41,7 +41,7 @@ def add_pic(new_plant: Plant, pic):
         print("error in res")
         return Response(result)
 
-    new_plant.image_url = result
+    new_plant.image_url_plant = result
     new_plant.save()
     print("result  =", result)
 
@@ -65,10 +65,10 @@ def process_file_upload_coll(file_object: InMemoryUploadedFile, client, image_na
 
 def add_pic_coll(new_coll: Collection, pic):
     client = Minio(           
-            endpoint=settings.AWS_S3_ENDPOINT_URL,
-           access_key=settings.AWS_ACCESS_KEY_ID,
-           secret_key=settings.AWS_SECRET_ACCESS_KEY,
-           secure=settings.MINIO_USE_SSL
+        endpoint=settings.AWS_S3_ENDPOINT_HOST,
+        access_key=settings.AWS_ACCESS_KEY_ID,
+        secret_key=settings.AWS_SECRET_ACCESS_KEY,
+        secure=settings.MINIO_USE_SSL
     )
     print("minio new coll", new_coll)
     
@@ -88,7 +88,7 @@ def add_pic_coll(new_coll: Collection, pic):
         print("error in res")
         return Response(result)
 
-    new_coll.image_url = result
+    new_coll.image_url_collection = result
     new_coll.save()
     print("result  =", result)
 
