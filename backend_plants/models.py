@@ -199,7 +199,7 @@ class Collection(models.Model):
     collection_name = models.CharField(verbose_name='Название коллекции', max_length=150)
     image_url_collection = models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото коллекции')
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, default=1, verbose_name='Создатель', db_column='user_id')
-    recommendation = models.ForeignKey(Recommendation, on_delete=models.CASCADE, blank=True, null=True,  db_column='recommendation_id')
+    # recommendation = models.ForeignKey(Recommendation, on_delete=models.CASCADE, blank=True, null=True,  db_column='recommendation_id')
     includes_plants = models.ManyToManyField(Plant, through='CollectionPlant', null=False)
     date_create = models.DateField(auto_now_add=True, verbose_name='Дата создания коллекции')
     time_create = models.TimeField(auto_now_add=True, verbose_name='Время создания коллекции')

@@ -73,7 +73,7 @@ def add_pic_coll(new_coll: Collection, pic):
     print("minio new coll", new_coll)
     
     
-    i = new_coll.collection_name
+    i = new_coll.collection_id
     # i = data.plant_id
     # print("i =", type(i))
     img_obj_name = f"{i}.png"

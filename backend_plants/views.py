@@ -207,6 +207,8 @@ def get_plants(request, format=None):
 
     plants = Plant.objects.all()
 
+    print(plants[:2])
+
     if plant_name_r:
         print("plant_name_r =", plant_name_r)
         plants = plants.filter(
@@ -511,7 +513,7 @@ def delete_plant(request, id, format=None):
 
 
 
-# # удаление информации о заболевании (услуге)
+# # удаление информации о растении (услуге)
 @api_view(['DELETE'])
 @permission_classes([IsManager])
 @authentication_classes([])
@@ -560,9 +562,9 @@ def add_plant_to_collection(request, id):
         collection = Collection.objects.create(user=user)
         collection.collection_name = "Название коллекции"
         collection_id = collection.collection_id
-        recommendation_1 = Recommendation.objects.create()
+        # recommendation_1 = Recommendation.objects.create()
         # recommendation_id = recommendation_1.recommendation_id
-        collection.recommendation = recommendation_1
+        # collection.recommendation = recommendation_1
         collection.save()
 
 
@@ -585,6 +587,7 @@ def add_plant_to_collection(request, id):
 @api_view(['GET'])
 @permission_classes([IsUser])
 def get_collections(request, format=None):
+    print("get_collections")
 
     token = get_access_token(request)
     if not token:
@@ -595,7 +598,7 @@ def get_collections(request, format=None):
     user_id = payload["user_id"]
 
     curr_user = CustomUser.objects.get(user_id = user_id)
-    print("cccccccccccurrr uuser =", curr_user)
+    print("cccccccccccurrr uuser =", curr_user, "user_id =", user_id)
     user = get_object_or_404(CustomUser, user_id=user_id)
 
     collection_name_r = request.GET.get('collection_name') ## поиск коллекции по названию
@@ -614,6 +617,33 @@ def get_collections(request, format=None):
         )
 
     serializer = CollectionsSerializer(collections, many=True)
+    return Response(serializer.data)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsUser])
+def get_entered_collection(request, format=None):
+
+    token = get_access_token(request)
+    if not token:
+        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response('Нет токена')
+    
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+
+    curr_user = CustomUser.objects.get(user_id = user_id)
+    print("cccccccccccurrr uuser =", curr_user, "user_id =", user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
+
+    collection_name_r = request.GET.get('collection_name') ## поиск коллекции по названию
+    # time_create= request.GET.get('time_create')
+    status_r= request.GET.get('status') ## фильтрация по статусу
+
+
+    collection= Collection.objects.get(user=user_id, status=0)
+    serializer = CollectionsSerializer(collection, many=False)
     return Response(serializer.data)
 
 
@@ -707,6 +737,34 @@ def delete_collection(request, id, format=None):
         collection.status = 2
         collection.save()
         return Response(f"Коллекция с id={id} успешно удалена", status=status.HTTP_200_OK)
+    else:
+        return Response("Нет доступа к данным коллекции")
+
+
+@api_view(['DELETE'])
+@permission_classes([IsUser])
+def delete_obj_collection(request, id, format=None):
+
+    token = get_access_token(request)
+    if not token:
+        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response('Нет токена')
+    
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+
+    curr_user = CustomUser.objects.get(user_id = user_id)
+    print("cccccccccccurrr uuser =", curr_user, user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
+
+    try:
+        collection = Collection.objects.get(collection_id=id)
+    except Collection.DoesNotExist:
+        return Response(f"Коллекция с id={id} не найдена", status=status.HTTP_404_NOT_FOUND)
+
+    if collection.user == user:
+        collection.delete()
+        return Response(f"Коллекция с id={id} успешно удалена из БД", status=status.HTTP_200_OK)
     else:
         return Response("Нет доступа к данным коллекции")
     
@@ -850,10 +908,8 @@ def collection_upd_status_to_editing(request, id):
     print("curr user =", curr_user, user_id)
     user = get_object_or_404(CustomUser, user_id=user_id)
 
-    if not Collection.objects.filter(collection_id=id, user=user, status=1).exists():
-        return Response(f"Активной коллекции с таким id не существует для пользователя {user}")
-    if not Collection.objects.filter(collection_id=id, user=user, status=0).exists():
-        return Response(f"Удаленной коллекции с таким id не существует для пользователя {user}")
+    if (not Collection.objects.filter(collection_id=id, user=user, status=1).exists() and not Collection.objects.filter(collection_id=id, user=user, status=0).exists()):
+        return Response(f"Активной / Удаленной коллекции с таким id не существует для пользователя {user}")
     else:
         try: 
             collection_0 = Collection.objects.get(collection_id=id, user=user, status=0)
@@ -872,7 +928,7 @@ def collection_upd_status_to_editing(request, id):
         return Response(f'Успешно обновлен статус коллекции {id} на "Черновик" для пользователя {user}', status=status.HTTP_200_OK)
 
  
-@api_view(['POST'])
+@api_view(['PUT'])
 @permission_classes([IsUser])
 def update_collection(request, id):
 
@@ -890,9 +946,9 @@ def update_collection(request, id):
 
     try:
         collection = Collection.objects.get(user=user, collection_id=id)
-        print("Изначальная коллекция: ")
-        print(collection)
-        print()
+        # print("Изначальная коллекция: ")
+        # print(collection)
+        # print()
     except Collection.DoesNotExist:
         return Response(f"Коллекции c id={id} для пользователя {user} не существует", status=status.HTTP_404_NOT_FOUND)
     
@@ -904,13 +960,13 @@ def update_collection(request, id):
         'collection_name': data['collection_name'],  # Получаем первое значение
     }
     serializer = CollectionSerializer(instance=collection, data=final_data, partial=True)
-    print("serial 0 =", serializer)
+    # print("serial 0 =", serializer)
     if serializer.is_valid():
         # serializer.save()
         new_coll_instance = serializer.save()
         # print("new_plant_instance =", type(new_plant_instance))
         pic_result = add_pic_coll(new_coll_instance, image_file)
-        return Response({"message": "Растение успешно обновлено в БД"}, status=status.HTTP_201_CREATED)
+        return Response({"message": "Коллекция успешно обновлена в БД"}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
  
@@ -955,6 +1011,25 @@ def get_recommendation(request, id, format=None):
             return Response("Нет данных по коллекции для формирования рекомендаций")
     else:
         return Response("Нет доступа к данным")
+
+
+# @permission_classes([IsUser])
+@api_view(['DELETE'])
+def del_recommendation(request, id, format=None):
+    # token = get_access_token(request)
+    # if not token:
+    #     # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+    #     return Response('Нет токена')
+    
+    # payload = get_jwt_payload(token)
+    # user_id = payload["user_id"]
+
+    # curr_user = CustomUser.objects.get(user_id= user_id)
+    # print("cccccccccccurrr uuser =", curr_user)
+
+    recommendation = get_object_or_404(Recommendation, recommendation_id=id)
+    recommendation.delete()
+    return Response(f"Рекомендация {id} удалена из Базы данных", status=status.HTTP_204_NO_CONTENT)
             
 
 
