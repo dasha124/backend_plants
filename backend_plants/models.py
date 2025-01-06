@@ -177,6 +177,7 @@ class Plant(models.Model):
 
 class Recommendation(models.Model):
     recommendation_id = models.AutoField(primary_key=True, db_column='recommendation_id')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, default=1, verbose_name='Создатель', db_column='user_id')
     includes_plants = models.ManyToManyField(Plant, through='RecommendationPlant', null=False)
     last_modified_date = models.DateField(auto_now=True, verbose_name='Дата последнего изменения рекомендации')
     last_modified_time = models.TimeField(auto_now=True, verbose_name='Время последнего изменения рекомендации')

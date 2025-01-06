@@ -16,5 +16,6 @@ sudo MINIO_ROOT_USER=minioadmin MINIO_ROOT_PASSWORD=minioadmin ./minio server /m
 Удалить все файлы миграции (в папке migrations должен оставаться только файл init.py)
 Удалить все таблицы из базы, она должна быть полностью пустой
 python manage.py migrate --run-syncdb (синхронизирует приложение с бд, создает служебные таблицы)
+
 python manage.py makemigrations <название вашего приложения>
 python manage.py migrate <название вашего приложения>
