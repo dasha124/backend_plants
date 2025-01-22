@@ -36,6 +36,7 @@ urlpatterns = [
    # для растений (=услуг)
    path(r'api/plants/classes/', views.get_plant_classes, name='get_plant_classes'), # (get)
    path(r'api/plants/subclasses/', views.get_plant_subclasses, name='get_plant_subclasses'), # (get)
+   path(r'api/plants_0/', views.get_plants_0, name='get_plants_0'), # (get)
    path(r'api/plants/', views.get_plants, name='get_plants'), # (get)
    path(r'api/plants/<int:id>/', views.get_plant, name='get_plant'), # (get)
    path(r'api/plants/add_plant/', views.add_new_plant, name='add_new_plant'), # (post) раньше назыв /disease/post/
@@ -70,15 +71,18 @@ urlpatterns = [
    # для рекомендаций растений (=заявок)
    # path(r'api/recommendations/', views.get_recommendations, name='get_recommendations'),  -  это не надо смотреть юзикам, по сути этого нет, просто список idшек
    
-   #TODO - если прикручивать получение рекомендации просто по карточке растения - надо делать без id
-   path(r'api/recommendarions/<int:id>/', views.view_recommendation, name='get_recommendation'), # get = view
-   # +
-   path(r'api/recommendarions/<int:id_collection>/', views.get_recommendation_by_coll, name='get_recommendation'),
-   path(r'api/recommendarions/<int:id_plant>/', views.get_recommendation_by_plant, name='get_recommendation'),
-   path(r'api/recommendarions/LLM/', views.get_recommendation_by_LLM, name='get_recommendation'),
-   path(r'api/recommendarions/Expert/', views.get_recommendation_by_Expert, name='get_recommendation'),
-   path(r'api/recommendarions/<int:id>/delete', views.del_recommendation, name='del_recommendation'),
-   # path(r'api/get_users/', views.get_users, name='get_users'),
+
+
+   
+   # #TODO - если прикручивать получение рекомендации просто по карточке растения - надо делать без id
+   # path(r'api/recommendarions/<int:id>/', views.view_recommendation, name='get_recommendation'), # get = view
+   # # +
+   # path(r'api/recommendarions/<int:id_collection>/', views.get_recommendation_by_coll, name='get_recommendation'),
+   # path(r'api/recommendarions/<int:id_plant>/', views.get_recommendation_by_plant, name='get_recommendation'),
+   # path(r'api/recommendarions/LLM/', views.get_recommendation_by_LLM, name='get_recommendation'),
+   # path(r'api/recommendarions/Expert/', views.get_recommendation_by_Expert, name='get_recommendation'),
+   # path(r'api/recommendarions/<int:id>/delete', views.del_recommendation, name='del_recommendation'),
+   # # path(r'api/get_users/', views.get_users, name='get_users'),
 
 
    # получение размеров картинки через минио
