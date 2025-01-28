@@ -33,7 +33,7 @@ urlpatterns = [
    path('admin/', admin.site.urls),
 
 
-   # для растений (=услуг)
+   # для растений
    path(r'api/plants/classes/', views.get_plant_classes, name='get_plant_classes'), # (get)
    path(r'api/plants/subclasses/', views.get_plant_subclasses, name='get_plant_subclasses'), # (get)
    path(r'api/plants_0/', views.get_plants_0, name='get_plants_0'), # (get)
@@ -46,7 +46,7 @@ urlpatterns = [
    path(r'api/plants/<int:id>/add_plant_to_collection/', views.add_plant_to_collection, name='add_plant_to_collection'), # (post)
 
 
-   # для избранных коллекций растений (=заявок)
+   # для избранных коллекций растений
    path(r'api/collections/', views.get_collections, name='get_collections'), #активные, без черновиков
    path(r'api/collections/get_entered/', views.get_entered_collection, name='get_entered_collection'),
    path(r'api/collections/deleted_collections/', views.get_deleted_collections, name='get_deleted_collections'),
@@ -77,8 +77,8 @@ urlpatterns = [
    # #TODO - если прикручивать получение рекомендации просто по карточке растения - надо делать без id
    # path(r'api/recommendarions/<int:id>/', views.view_recommendation, name='get_recommendation'), # get = view
    # # +
-   # path(r'api/recommendarions/coll/<int:id_collection>/', views.get_recommendation_by_coll, name='get_recommendation'),
-   # path(r'api/recommendarions/plant/<int:id_plant>/', views.get_recommendation_by_plant, name='get_recommendation'),
+   path(r'api/recommendarions/coll/<int:id_collection>/', views.get_recommendation_by_coll, name='get_recommendation_by_coll'),
+   path(r'api/recommendarions/plant/<int:id_plant>/', views.get_recommendation_by_plant, name='get_recommendation_by_plant'),
    # path(r'api/recommendarions/LLM/', views.get_recommendation_by_LLM, name='get_recommendation'),
    # path(r'api/recommendarions/Expert/', views.get_recommendation_by_Expert, name='get_recommendation'),
    # path(r'api/recommendarions/<int:id>/delete', views.del_recommendation, name='del_recommendation'),

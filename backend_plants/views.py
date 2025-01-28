@@ -33,6 +33,7 @@ from django.core.files.base import ContentFile
 import requests
 from backend_plants.minio import *
 from backend_plants.get_pic_from_minio import *
+from recs.recs import *
 # from drf_yasg.utils import swagger_auto_schema
 
 
@@ -1104,6 +1105,18 @@ def del_recommendation(request, id, format=None):
     recommendation.delete()
     return Response(f"Рекомендация {id} удалена из Базы данных", status=status.HTTP_204_NO_CONTENT)
             
+
+
+@api_view(['GET'])
+def get_recommendation_by_plant(request, id_plant, format=None):
+    viewed_ids = [id_plant]
+    res = get_sim_mean(viewed_ids, vects)
+    res_ids = res['similar_ind']
+    json_output = json.dumps(res_ids, cls=NpEncoder)
+    
+    
+    recommendation = get_object_or_404(Recommendation, recommendation_id=id)
+    serializer = RecommendationSerializer(recommendation)
 
 
 # #@swagger_auto_schema(method='get')
