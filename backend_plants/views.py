@@ -1123,9 +1123,10 @@ def get_recommendation_by_plant(request, id_plant, format=None):
         print("Замена названия на дефолт!!!!!!")
         id_plant = index.index('Бархатцы французские')
 
-
     try: 
         recommendation = Recommendation.objects.get(plant=id_plant0)
+        if recommendation:
+            return Response(f"Рекомендация для растения с {id_plant0} уже есть в Базе данных", status=status.HTTP_201_CREATED)
     except Recommendation.DoesNotExist:
         viewed_ids = [id_plant]
         res = get_sim_mean(viewed_ids, vects)
@@ -1144,6 +1145,63 @@ def get_recommendation_by_plant(request, id_plant, format=None):
         
         serializer = RecommendationSerializer(new_rec)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    serializer = RecommendationSerializer(recommendation)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+
+@api_view(['GET'])
+def get_recommendation_by_coll(request, id_coll, format=None):
+    with open('recs/index.json', 'rb') as f:
+        index = json.load(f) 
+    with open('recs/vects_q.npy', 'rb') as f:
+        vects = np.load(f)  
+
+    # collection = get_object_or_404(Collection, collection_id=id_coll)
+    try:
+        collection = Collection.objects.get(collection_id=id_coll)
+        if Recommendation.objects.get(collection_id=id_coll):
+            return Response(f"Рекомендация для коллекции с {id_coll} уже есть в Базе данных", status=status.HTTP_201_CREATED)
+    except Collection.DoesNotExist:
+        return Response(f"Коллекции с {id_coll} не найдено в Базе данных", status=status.HTTP_404_NOT_FOUND)
+
+    plant_ids = collection.includes_plants.values_list('plant_id', flat=True)
+
+    # Преобразуем QuerySet в список ID растений
+    plant_ids_list = list(plant_ids)
+    print(plant_ids_list)
+
+    plant_ids_list0 = plant_ids_list
+    ids = []
+    for id in plant_ids_list:
+        plant_name = get_object_or_404(Plant, plant_id=id).plant_name
+        try:
+            id_plant = index.index(plant_name)
+        except ValueError:
+            print("Замена названия на дефолт!!!!!!")
+            id_plant = index.index('Бархатцы французские')
+        ids.append(id_plant)
+    print("ids =", ids)
+
+    viewed_ids = ids
+    res = get_sim_mean(viewed_ids, vects)
+    res_ids = res['similar_ind']
+    similar_ids = list(map(int, res['similar_ind']))
+    output_len = len(similar_ids)
+
+    new_rec = Recommendation.objects.create(type_rec_id=2, collection_id=id_coll, plant=None)
+
+    for rec_plant_id in similar_ids:
+
+        ind_plant_name = index[rec_plant_id]
+        plant = get_object_or_404(Plant, plant_name = ind_plant_name)
+        RecommendationPlant.objects.create(recommendation=new_rec, plant=plant, weight=output_len)
+        output_len -= 1
+    
+    serializer = RecommendationSerializer(new_rec)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     serializer = RecommendationSerializer(recommendation)
     return Response(serializer.data, status=status.HTTP_200_OK)
