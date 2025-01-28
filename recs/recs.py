@@ -1,19 +1,21 @@
 import json
 import numpy as np
 
-with open('./vects_q.npy', 'rb') as f:
+
+
+with open('recs/vects_q.npy', 'rb') as f:
   vects = np.load(f)
 
-with open('./index.json', 'rb') as f:
+with open('recs/index.json', 'rb') as f:
   index = json.load(f)
 
-def get_similar(v, vects, n=10):
-  scores = np.matmul(vects, v)
-  scores = scores / 128
-  top_similat_ind = (-scores).argsort()[:n]
-  return {
-      'similar_ind': list(top_similat_ind),
-      'similar_scores': list(scores[top_similat_ind])
+def get_similar(v, vects, n=5):
+    scores = np.matmul(vects, v)
+    scores = scores / 128
+    top_similat_ind = (-scores).argsort()[:n]
+    return {
+        'similar_ind': list(top_similat_ind),
+        'similar_scores': list(scores[top_similat_ind])
     }
 
 
@@ -36,9 +38,10 @@ def filter_(recs, viewed_ids):
   return res
 
 
-def get_sim_mean(viewed_ids, vects, n=10):
+def get_sim_mean(viewed_ids, vects):
+  n = 5
   v = np.zeros(64)
-  viewed_ids = viewed_ids[::-1][:10]
+  viewed_ids = viewed_ids[::-1][:n]
   for i in viewed_ids[:]:
     v += vects[i]
   v /= len(viewed_ids)

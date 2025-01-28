@@ -77,7 +77,7 @@ urlpatterns = [
    # #TODO - если прикручивать получение рекомендации просто по карточке растения - надо делать без id
    # path(r'api/recommendarions/<int:id>/', views.view_recommendation, name='get_recommendation'), # get = view
    # # +
-   path(r'api/recommendarions/coll/<int:id_collection>/', views.get_recommendation_by_coll, name='get_recommendation_by_coll'),
+   # path(r'api/recommendarions/coll/<int:id_collection>/', views.get_recommendation_by_coll, name='get_recommendation_by_coll'),
    path(r'api/recommendarions/plant/<int:id_plant>/', views.get_recommendation_by_plant, name='get_recommendation_by_plant'),
    # path(r'api/recommendarions/LLM/', views.get_recommendation_by_LLM, name='get_recommendation'),
    # path(r'api/recommendarions/Expert/', views.get_recommendation_by_Expert, name='get_recommendation'),

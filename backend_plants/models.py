@@ -172,27 +172,6 @@ class Plant(models.Model):
         verbose_name_plural = 'Растения'
 
 
-
-#----------------------------------------------------------------------------------------------------------------
-
-class Recommendation(models.Model):
-    recommendation_id = models.AutoField(primary_key=True, db_column='recommendation_id')
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, default=1, verbose_name='Создатель', db_column='user_id')
-    includes_plants = models.ManyToManyField(Plant, through='RecommendationPlant', null=False)
-    last_modified_date = models.DateField(auto_now=True, verbose_name='Дата последнего изменения рекомендации')
-    last_modified_time = models.TimeField(auto_now=True, verbose_name='Время последнего изменения рекомендации')
-
-    def plant_names(self):
-        return self.includes_plants.all()
-
-
-    class Meta:
-        db_table = 'Recommendation'
-        managed = True
-        verbose_name = 'Рекомендация'
-        verbose_name_plural = 'Рекомендации'
-
-
 #----------------------------------------------------------------------------------------------------------------
 
 class Collection(models.Model):
@@ -235,6 +214,44 @@ class Collection(models.Model):
         managed = True
         verbose_name = 'Коллекция'
         verbose_name_plural = 'Коллекции'
+
+#----------------------------------------------------------------------------------------------------------------
+
+class Type_Recommendation(models.Model):
+    type_rec_id = models.AutoField(primary_key=True, db_column='type_rec_id')
+    type_rec_name = models.CharField(verbose_name='Название типа рекомендации', max_length=50)
+
+    # 1 - для растения
+    # 2 - для коллекции
+
+    class Meta:
+        db_table = 'Type_Recommendation'
+        managed = True
+        verbose_name = 'Тип рекомендации'
+        verbose_name_plural = 'Типы рекомендации'
+
+
+class Recommendation(models.Model):
+    recommendation_id = models.AutoField(primary_key=True, db_column='recommendation_id')
+    type_rec = models.ForeignKey(Type_Recommendation, default=1, verbose_name='Название типа рекомендации', on_delete=models.CASCADE, db_column='rec_type_id')
+    plant = models.ForeignKey(Plant, on_delete=models.CASCADE, verbose_name='Растение', db_column='for_plant_id', null=True)
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, verbose_name='Коллекция', db_column='for_col_id', null=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, default=1, verbose_name='Создатель', db_column='user_id', null = True)
+    includes_plants = models.ManyToManyField(Plant, through='RecommendationPlant', related_name='recommended_in', null=False)
+    last_modified_date = models.DateField(auto_now=True, verbose_name='Дата последнего изменения рекомендации')
+    last_modified_time = models.TimeField(auto_now=True, verbose_name='Время последнего изменения рекомендации')
+
+    def plant_names(self):
+        return self.includes_plants.all()
+
+
+    class Meta:
+        db_table = 'Recommendation'
+        managed = True
+        verbose_name = 'Рекомендация'
+        verbose_name_plural = 'Рекомендации'
+
+
 
 
 #----------------------------------------------------------------------------------------------------------------

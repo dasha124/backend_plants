@@ -1106,17 +1106,49 @@ def del_recommendation(request, id, format=None):
     return Response(f"Рекомендация {id} удалена из Базы данных", status=status.HTTP_204_NO_CONTENT)
             
 
-
+# здесь пока что фотка начального растения - в топе 1 по похожести, ее надо убрать
 @api_view(['GET'])
 def get_recommendation_by_plant(request, id_plant, format=None):
-    viewed_ids = [id_plant]
-    res = get_sim_mean(viewed_ids, vects)
-    res_ids = res['similar_ind']
-    json_output = json.dumps(res_ids, cls=NpEncoder)
+    with open('recs/index.json', 'rb') as f:
+        index = json.load(f) 
+    with open('recs/vects_q.npy', 'rb') as f:
+        vects = np.load(f)  
+
+    # id_plant - id из бд
+    id_plant0 = id_plant
+    plant_name = get_object_or_404(Plant, plant_id=id_plant).plant_name
+    try:
+        id_plant = index.index(plant_name)
+    except ValueError:
+        print("Замена названия на дефолт!!!!!!")
+        id_plant = index.index('Бархатцы французские')
+
+
+    try: 
+        recommendation = Recommendation.objects.get(plant=id_plant0)
+    except Recommendation.DoesNotExist:
+        viewed_ids = [id_plant]
+        res = get_sim_mean(viewed_ids, vects)
+        res_ids = res['similar_ind']
+        similar_ids = list(map(int, res['similar_ind']))
+        output_len = len(similar_ids)
+
+        new_rec = Recommendation.objects.create(type_rec_id=1, plant_id=id_plant0, collection=None)
+
+        for rec_plant_id in similar_ids:
+
+            ind_plant_name = index[rec_plant_id]
+            plant = get_object_or_404(Plant, plant_name = ind_plant_name)
+            RecommendationPlant.objects.create(recommendation=new_rec, plant=plant, weight=output_len)
+            output_len -= 1
+        
+        serializer = RecommendationSerializer(new_rec)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     
-    
-    recommendation = get_object_or_404(Recommendation, recommendation_id=id)
     serializer = RecommendationSerializer(recommendation)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 
 
 # #@swagger_auto_schema(method='get')
