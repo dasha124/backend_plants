@@ -8,6 +8,9 @@ from rest_framework import permissions
 from django.urls import path, include
 # from drf_yasg.views import get_schema_view
 # from drf_yasg import openapi
+from django.conf.urls.static import static
+from django.conf import settings
+from recs.search_plant import *
 
 router = routers.DefaultRouter()
 
@@ -77,8 +80,9 @@ urlpatterns = [
    # #TODO - если прикручивать получение рекомендации просто по карточке растения - надо делать без id
    # path(r'api/recommendarions/<int:id>/', views.view_recommendation, name='get_recommendation'), # get = view
    # # +
-   path(r'api/recommendarions/coll/<int:id_coll>/', views.get_recommendation_by_coll, name='get_recommendation_by_coll'),
-   path(r'api/recommendarions/plant/<int:id_plant>/', views.get_recommendation_by_plant, name='get_recommendation_by_plant'),
+   path(r'api/plant/search', predictImage, name='search_plant'),
+   path(r'api/recommendations/coll/<int:id_coll>/', views.get_recommendation_by_coll, name='get_recommendation_by_coll'),
+   path(r'api/recommendations/plant/<int:id_plant>/', views.get_recommendation_by_plant, name='get_recommendation_by_plant'),
    # path(r'api/recommendarions/LLM/', views.get_recommendation_by_LLM, name='get_recommendation'),
    # path(r'api/recommendarions/Expert/', views.get_recommendation_by_Expert, name='get_recommendation'),
    # path(r'api/recommendarions/<int:id>/delete', views.del_recommendation, name='del_recommendation'),
@@ -106,3 +110,4 @@ urlpatterns = [
 
 
 ]
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

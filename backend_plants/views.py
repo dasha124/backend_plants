@@ -1162,8 +1162,7 @@ def get_recommendation_by_coll(request, id_coll, format=None):
     # collection = get_object_or_404(Collection, collection_id=id_coll)
     try:
         collection = Collection.objects.get(collection_id=id_coll)
-        if Recommendation.objects.get(collection_id=id_coll):
-            return Response(f"Рекомендация для коллекции с {id_coll} уже есть в Базе данных", status=status.HTTP_201_CREATED)
+        collection.delete()
     except Collection.DoesNotExist:
         return Response(f"Коллекции с {id_coll} не найдено в Базе данных", status=status.HTTP_404_NOT_FOUND)
 
