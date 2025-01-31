@@ -39,7 +39,7 @@ urlpatterns = [
    # для растений
    path(r'api/plants/classes/', views.get_plant_classes, name='get_plant_classes'), # (get)
    path(r'api/plants/subclasses/', views.get_plant_subclasses, name='get_plant_subclasses'), # (get)
-   path(r'api/plants_0/', views.get_plants_0, name='get_plants_0'), # (get)
+   path(r'api/plants/types/', views.get_plant_types, name='get_plant_types'), # (get)
    path(r'api/plants/', views.get_plants, name='get_plants'), # (get)
    path(r'api/plants/<int:id>/', views.get_plant, name='get_plant'), # (get)
    path(r'api/plants/add_plant/', views.add_new_plant, name='add_new_plant'), # (post) раньше назыв /disease/post/

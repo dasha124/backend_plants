@@ -193,98 +193,12 @@ def get_plant_subclasses(request, format=None):
     return Response(serializer.data)
 
 
-# список растений
 @permission_classes([AllowAny])
-#@swagger_auto_schema(method='GET')
 @api_view(['GET'])
-def get_plants_0(request, format=None):
-    plant_name_r = request.GET.get('plant_name')
-    class_name_r = request.GET.get('class_name')
-    subclass_name_r = request.GET.get('subclass_name')
-    type_name_r = request.GET.get('type_name')
-    light_filter = request.GET.get('light') 
-    collectionID = 0
-    token = get_access_token(request)
-
-    plants = Plant.objects.all()
-
-    print(plants[:2])
-
-    if plant_name_r:
-        print("plant_name_r =", plant_name_r)
-        plants = plants.filter(
-            Q(plant_name__icontains = plant_name_r.lower())
-        )
-    if class_name_r:
-        print("class_name_r =", class_name_r)
-        plant_class = get_object_or_404(Plant_Class, class_name = class_name_r)
-        plants = plants.filter(plant_class = plant_class.plant_class_id)
-    if subclass_name_r:
-        print("subclass_name_r =", subclass_name_r)
-        plant_subclass = get_object_or_404(Plant_Subclass, subclass_name = subclass_name_r)
-        plants = plants.filter(plant_subclass = plant_subclass.plant_subclass_id)
-    if type_name_r:
-        print("type_name_r =", type_name_r)
-        plant_type = get_object_or_404(Plant_Type, type_name = type_name_r)
-        plants = plants.filter(plant_type = plant_type.plant_type_id)
-    if light_filter:
-        print("light_filter =", light_filter)
-        plants = plants.filter(properties__light__icontains=light_filter)
-
-
-    if token not in ['undefined', 'None']:
-        payload = get_jwt_payload(token)
-        user_id = payload["user_id"]
-
-        try:
-            curr_user = CustomUser.objects.get(user_id= user_id)
-        except CustomUser.DoesNotExist:
-            curr_user = None
-        try:
-            admin_user = AdminUser.objects.get(admin_id = user_id)
-        except AdminUser.DoesNotExist:
-            admin_user = None
-        print("uuuuuuu", curr_user)
-
-        if admin_user:
-            # if plant_name_r:
-            #     plants = plants.filter(
-            #         Q(plant_name__icontains = plant_name_r.lower())
-            #     )       
-            collectionID = 0 # так то коллекций у админов нет
-        # if not admin_user:
-        else:
-            try:
-                collection = Collection.objects.get(user_id=user_id, status=0)
-                collectionID = collection.collection_id
-            except Collection.DoesNotExist:
-                collectionID = 0
-            plants = plants.filter(status='a')
-            # if plant_name_r:
-            #     plants = plants.filter(
-            #         Q(plant_name__icontains = plant_name_r.lower())
-            #     )
-
-        serialized_plants = []
-        for plant in plants:
-            serializer = PlantSerializer(plant)
-            serialized_plants.append(serializer.data)
-        serialized_plants.append({"collectionID": collectionID})
-
-        return Response(serialized_plants)
-    # if token == 'undefined':
-    else:
-        collectionID=0
-        # print('here')
-
-        plants = plants.filter(Q(status='a'))
-        serialized_plants = []
-        for plant in plants:
-            serializer = PlantSerializer(plant)
-            serialized_plants.append(serializer.data)
-        serialized_plants.append({"collectionID": 0})
-        return Response(serialized_plants)
-
+def get_plant_types(request, format=None):
+    plant_types = Plant_Type.objects.all()
+    serializer = GetPlantTypeSerializer(plant_types, many=True)
+    return Response(serializer.data)
 
 
 # список растений
@@ -661,6 +575,8 @@ def add_plant_to_collection(request, id):
 @api_view(['GET'])
 @permission_classes([IsUser])
 def get_collections(request, format=None):
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    print(request)
     print("get_collections")
 
     token = get_access_token(request)

@@ -41,7 +41,7 @@ class PlantTypeSerializer(serializers.ModelSerializer):
 class GetPlantTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant_Type
-        fields = ['plant_type_id', 'type_name']
+        fields = '__all__'
 
 
 # ------------------------------------------------------------------------------------------------
