@@ -46,21 +46,21 @@ urlpatterns = [
    path(r'api/plants/<int:id>/update_plant/', views.update_plant, name='update_plant'), # (put)
    path(r'api/plants/<int:id>/delete_plant/', views.delete_plant, name='delete_plant'), # (del)
    path(r'api/plants/<int:id>/obj_delete_plant/', views.obj_delete_plant, name='obj_delete_plant'), # (del)
-   path(r'api/plants/<int:id>/add_plant_to_collection/', views.add_plant_to_collection, name='add_plant_to_collection'), # (post)
+   path(r'api/plants/<int:id_plant>/<int:id_coll>/add_plant_to_collection/', views.add_plant_to_collection, name='add_plant_to_collection'), # (post)
 
 
    # для избранных коллекций растений
    path(r'api/collections/', views.get_collections, name='get_collections'), #активные, без черновиков
-   path(r'api/collections/get_entered/', views.get_entered_collection, name='get_entered_collection'),
+   # path(r'api/collections/get_entered/', views.get_entered_collection, name='get_entered_collection'),
    path(r'api/collections/deleted_collections/', views.get_deleted_collections, name='get_deleted_collections'),
    path(r'api/collections/<int:id>/', views.get_collection, name='get_collection'),
    path(r'api/collections/<int:id>/update/', views.update_collection, name='update_collection'),
    path(r'api/collections/<int:id>/delete/', views.delete_collection,name='delete_collection'), # логическое удаление
    path(r'api/collections/<int:id>/obj_delete/', views.delete_obj_collection,name='delete_obj_collection'), # физическое удаление
-   path(r'api/collections/delete_editing_collection/', views.delete_editing_collection,name='delete_editing_collection'),
+   # path(r'api/collections/delete_editing_collection/', views.delete_editing_collection,name='delete_editing_collection'),
    path(r'api/collections/<int:id_collection>/<int:id_plant>/delete_plant_from_collection/', views.delete_plant_from_collection, name='delete_plant_from_colln'),
-   path(r'api/collections/update_st_user_to_create/', views.collection_upd_status_to_created,name='collection_update_status_user'), #put - сформировать заявку=коллекцию
-   path(r'api/collections/<int:id>/update_st_user_to_edit/', views.collection_upd_status_to_editing,name='collection_upd_status_to_editing'), #put - статус заявки=черновик
+   # path(r'api/collections/update_st_user_to_create/', views.collection_upd_status_to_created,name='collection_update_status_user'), #put - сформировать заявку=коллекцию
+   # path(r'api/collections/<int:id>/update_st_user_to_edit/', views.collection_upd_status_to_editing,name='collection_upd_status_to_editing'), #put - статус заявки=черновик
    #path(r'api/collections/<int:id>/edit/', views.edit_collection,name='edit_collection'), #put - заявки=черновик/ поменять статус и сразу открыть в окне для корзины
    path(r'api/collections/<int:id>/update_st_user_to_create_from_del/', views.collection_upd_status_to_created_from_del,name='collection_upd_status_to_created_from_del'), #put - сформировать заявку=коллекцию
    

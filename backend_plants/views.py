@@ -527,7 +527,7 @@ def obj_delete_plant(request, id, format=None):
 # #@swagger_auto_schema(method='post', request_body=PlantSerializer)
 @api_view(['POST'])
 @permission_classes([IsUser])
-def add_plant_to_collection(request, id):
+def add_plant_to_collection(request, id_plant, id_coll):
     # print("add pl to coll", id)
 
     token = get_access_token(request)
@@ -538,29 +538,26 @@ def add_plant_to_collection(request, id):
     # print("user", user_id)
     user = get_object_or_404(CustomUser, user_id=user_id)
 
-    if not Plant.objects.filter(plant_id=id, status='a').exists():
+    if not Plant.objects.filter(plant_id=id_plant).exists():
         return Response({"error": "Растения с таким id не найдено"}, status=status.HTTP_404_NOT_FOUND)
     
-    plant = Plant.objects.get(plant_id=id)
+    plant = Plant.objects.get(plant_id=id_plant)
     try:
-        collection = Collection.objects.get(status=0, user=user_id)
+        collection = Collection.objects.get(collection_id=id_coll, user=user_id)
         collection_id = collection.collection_id
         # return Response({"error": "Растение уже в черновой коллекции"})
     except Collection.DoesNotExist:
         collection = Collection.objects.create(user=user)
         collection.collection_name = "Название коллекции"
         collection_id = collection.collection_id
-        # recommendation_1 = Recommendation.objects.create()
-        # recommendation_id = recommendation_1.recommendation_id
-        # collection.recommendation = recommendation_1
         collection.save()
 
 
     try:
-        plant_in_col = CollectionPlant.objects.get(collection_id=collection_id, plant_id=id)
+        plant_in_col = CollectionPlant.objects.get(collection_id=collection_id, plant_id=id_plant)
         return Response({"error": "Растение уже в черновой коллекции"})
     except CollectionPlant.DoesNotExist:
-        plant_in_col = CollectionPlant.objects.create(collection_id=collection_id, plant_id=id)
+        plant_in_col = CollectionPlant.objects.create(collection_id=collection_id, plant_id=id_plant)
 
         
     collection.includes_plants.add(plant)
