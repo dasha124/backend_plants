@@ -188,7 +188,7 @@ class Collection(models.Model):
         (1, 'Сформирован'), # на рассмотрениии - 'in operation'  - юзер смена
         (2, 'Удалён') # удалён - 'deleted'  - юзер смена
     ]
-    status = models.IntegerField(choices=STATUSES, default=0)
+    status = models.IntegerField(choices=STATUSES, default=1)
 
 
     def __str__(self):
