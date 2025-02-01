@@ -140,7 +140,7 @@ def login_view(request):
     return response
     
 #@swagger_auto_schema(method='POST')
-@api_view(["POST"])
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def check(request):
     access_token = get_access_token(request)
@@ -154,7 +154,8 @@ def check(request):
         return Response(message, status=status.HTTP_401_UNAUTHORIZED)
 
     user_data = cache.get(access_token)
-    return Response(user_data, status=status.HTTP_200_OK)
+    print(user_data)
+    return Response([{"user_id": user_data['user_id'], "user_name": user_data['user_name'], "user_email": user_data['user_email'], "is_superuser":user_data['is_superuser']}],status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -563,18 +564,16 @@ def add_plant_to_collection(request, id_plant, id_coll):
     collection.includes_plants.add(plant)
     collection.save()
 
-    serializer = CollectionPlantSerializer(plant_in_col)
-    return Response({"message": "Растение добавлено в черновую коллекцию", "collection": serializer.data}, status=status.HTTP_200_OK)
+    # serializer = CollectionPlantSerializer(plant_in_col)
+    col_serializer = CollectionsSerializer(collection, many=False)
+    # return Response(col_serializer.data)
+    return Response({"message": "Растение добавлено в коллекцию", "collection": col_serializer.data}, status=status.HTTP_200_OK)
     
 
-# # список препаратов (заявок)
 # #@swagger_auto_schema(method='get')
 @api_view(['GET'])
 @permission_classes([IsUser])
 def get_collections(request, format=None):
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    print(request)
-    print("get_collections")
 
     token = get_access_token(request)
     if not token:
@@ -608,67 +607,6 @@ def get_collections(request, format=None):
 
 
 
-@api_view(['GET'])
-@permission_classes([IsUser])
-def get_entered_collection(request, format=None):
-
-    token = get_access_token(request)
-    if not token:
-        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response('Нет токена')
-    
-    payload = get_jwt_payload(token)
-    user_id = payload["user_id"]
-
-    curr_user = CustomUser.objects.get(user_id = user_id)
-    print("cccccccccccurrr uuser =", curr_user, "user_id =", user_id)
-    user = get_object_or_404(CustomUser, user_id=user_id)
-
-    collection_name_r = request.GET.get('collection_name') ## поиск коллекции по названию
-    # time_create= request.GET.get('time_create')
-    status_r= request.GET.get('status') ## фильтрация по статусу
-
-
-    collection= Collection.objects.get(user=user_id, status=0)
-    serializer = CollectionsSerializer(collection, many=False)
-    return Response(serializer.data)
-
-
-@api_view(['GET'])
-@permission_classes([IsUser])
-def get_deleted_collections(request, format=None):
-
-    token = get_access_token(request)
-    if not token:
-        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response('Нет токена')
-    
-    payload = get_jwt_payload(token)
-    user_id = payload["user_id"]
-
-    curr_user = CustomUser.objects.get(user_id = user_id)
-    print("cccccccccccurrr uuser =", curr_user)
-    user = get_object_or_404(CustomUser, user_id=user_id)
-
-    collection_name_r = request.GET.get('collection_name') ## поиск коллекции по названию
-    # time_create= request.GET.get('time_create')
-    status_r= request.GET.get('status') ## фильтрация по статусу
-
-
-    collections= Collection.objects.order_by('-time_create').filter(user=user_id, status=2)
-    if collection_name_r:
-        collections = collections.filter(
-            Q(collection_name__icontains = collection_name_r.lower())
-        )
-    if status_r is not None:
-        collections = collections.filter(
-            Q(status = status_r)
-        )
-
-    serializer = CollectionsSerializer(collections, many=True)
-    return Response(serializer.data)
-
-# # информация о препарате (заявке)
 # #@swagger_auto_schema(method='get')
 @api_view(['GET'])
 @permission_classes([IsUser])
@@ -699,6 +637,30 @@ def get_collection(request, id, format=None):
         return Response("Нет доступа к данным")
 
 
+@api_view(['POST'])
+@permission_classes([IsUser])
+def create_collection(request, format=None):
+
+    token = get_access_token(request)
+    if not token:
+        return Response({"Нет токена"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+    curr_user = CustomUser.objects.get(user_id = user_id)
+    user = get_object_or_404(CustomUser, user_id=user_id)
+
+    data=request.data
+
+    collection = Collection.objects.create(user=user)
+    collection.collection_name = data['collection_name']
+    collection.save()
+
+    return Response({"collection_id": collection.collection_id, "collection_name": collection.collection_name}, 
+                    status=status.HTTP_201_CREATED)
+
+
+
 @api_view(['DELETE'])
 @permission_classes([IsUser])
 def delete_collection(request, id, format=None):
@@ -727,67 +689,7 @@ def delete_collection(request, id, format=None):
     else:
         return Response("Нет доступа к данным коллекции")
 
-
-@api_view(['DELETE'])
-@permission_classes([IsUser])
-def delete_obj_collection(request, id, format=None):
-
-    token = get_access_token(request)
-    if not token:
-        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response('Нет токена')
     
-    payload = get_jwt_payload(token)
-    user_id = payload["user_id"]
-
-    curr_user = CustomUser.objects.get(user_id = user_id)
-    print("cccccccccccurrr uuser =", curr_user, user_id)
-    user = get_object_or_404(CustomUser, user_id=user_id)
-
-    try:
-        collection = Collection.objects.get(collection_id=id)
-    except Collection.DoesNotExist:
-        return Response(f"Коллекция с id={id} не найдена", status=status.HTTP_404_NOT_FOUND)
-
-    if collection.user == user:
-        collection.delete()
-        return Response(f"Коллекция с id={id} успешно удалена из БД", status=status.HTTP_200_OK)
-    else:
-        return Response("Нет доступа к данным коллекции")
-    
-
-# # удаление коллекции-черновика (заявки)
-@api_view(['DELETE'])
-@permission_classes([IsUser])
-def delete_editing_collection(request, format=None):
-
-    token = get_access_token(request)
-    if not token:
-        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response('Нет токена')
-    
-    payload = get_jwt_payload(token)
-    user_id = payload["user_id"]
-
-    curr_user = CustomUser.objects.get(user_id = user_id)
-    print("cccccccccccurrr uuser =", curr_user, user_id)
-    user = get_object_or_404(CustomUser, user_id=user_id)
-
-    if not Collection.objects.filter(status=0).exists():
-        return Response(f"Коллекции со статусом 'Черновик' не существует")
-    
-    try:
-        editing_collection = Collection.objects.get(status=0, user=user)
-    except Collection.DoesNotExist:
-        return Response(f"Коллекции со статусом 'Черновик' для пользователя {user} не существует")
-    
-    editing_collection.status=2
-    editing_collection.save()
-    editing_collection.includes_plants.clear()
-    # serializer = CollectionSerializer(editing_collection, many=False)
-    # return Response(serializer.data)
-    return Response(f"Коллекция со статусом 'Черновик' для пользователя {user} удалена")
-
 
 # # удаление растения из связанной с ним коллекции (из м-м)
 @api_view(['DELETE'])
@@ -824,30 +726,6 @@ def delete_plant_from_collection(request, id_collection, id_plant, format=None):
         return Response(f"Объекта выбранного растения для удаления из коллекции не найдено", status = status.HTTP_404_NOT_FOUND)
     
 
-# #@swagger_auto_schema(method='put', request_body=CollectionSerializer)
-@api_view(['PUT'])
-@permission_classes([IsUser])
-def collection_upd_status_to_created(request):
-
-    token = get_access_token(request)
-    if not token:
-        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response('Нет токена')
-    
-    payload = get_jwt_payload(token)
-    user_id = payload["user_id"]
-
-    curr_user = CustomUser.objects.get(user_id = user_id)
-    print("cccccccccccurrr uuser =", curr_user, user_id)
-    user = get_object_or_404(CustomUser, user_id=user_id)
-
-    if not Collection.objects.filter(user=user, status=0).exists():
-        return Response(f"Коллекции-черновика для пользователя {user} не существует")
-    
-    collection = Collection.objects.get(user=user, status=0)
-    collection.status = 1
-    collection.save()
-    return Response(f'Успешно обновлен статус коллекции на "Сформирован" для пользователя {user}', status=status.HTTP_200_OK)
 
 
 @api_view(['PUT'])
@@ -878,42 +756,6 @@ def collection_upd_status_to_created_from_del(request, id):
     return Response(f'Успешно обновлен статус коллекции на "Сформирован" для пользователя {user}', status=status.HTTP_200_OK)
 
 
-# #@swagger_auto_schema(method='put', request_body=CollectionSerializer)
-@api_view(['PUT'])
-@permission_classes([IsUser])
-def collection_upd_status_to_editing(request, id):
-    
-    token = get_access_token(request)
-    if not token:
-        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response('Нет токена')
-    
-    payload = get_jwt_payload(token)
-    user_id = payload["user_id"]
-
-    curr_user = CustomUser.objects.get(user_id = user_id)
-    print("curr user =", curr_user, user_id)
-    user = get_object_or_404(CustomUser, user_id=user_id)
-
-    if (not Collection.objects.filter(collection_id=id, user=user, status=1).exists() and not Collection.objects.filter(collection_id=id, user=user, status=0).exists()):
-        return Response(f"Активной / Удаленной коллекции с таким id не существует для пользователя {user}")
-    else:
-        try: 
-            collection_0 = Collection.objects.get(collection_id=id, user=user, status=0)
-        except Collection.DoesNotExist:
-            collection = Collection.objects.get(collection_id=id, user=user)
-            collection.status=0
-            collection.save()
-            return Response(f'Успешно обновлен статус коллекции {id} на "Черновик" для пользователя {user}', status=status.HTTP_200_OK)
-        # если есть какая то-коллекция-черновик, то мы ее переводим в сформированную,
-        # а коллекцию с пришедшим id переводим по команде на редактирование
-        collection_0.status = 1
-        collection_0.save()
-        collection = Collection.objects.get(collection_id=id, user=user)
-        collection.status = 0
-        collection.save()
-        return Response(f'Успешно обновлен статус коллекции {id} на "Черновик" для пользователя {user}', status=status.HTTP_200_OK)
-
  
 @api_view(['PUT'])
 @permission_classes([IsUser])
@@ -928,14 +770,10 @@ def update_collection(request, id):
     user_id = payload["user_id"]
 
     curr_user = CustomUser.objects.get(user_id = user_id)
-    print("cccccccccccurrr uuser =", curr_user, user_id)
     user = get_object_or_404(CustomUser, user_id=user_id)
 
     try:
         collection = Collection.objects.get(user=user, collection_id=id)
-        # print("Изначальная коллекция: ")
-        # print(collection)
-        # print()
     except Collection.DoesNotExist:
         return Response(f"Коллекции c id={id} для пользователя {user} не существует", status=status.HTTP_404_NOT_FOUND)
     
@@ -1114,9 +952,7 @@ def get_recommendation_by_coll(request, id_coll, format=None):
     
     serializer = RecommendationSerializer(new_rec)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-    serializer = RecommendationSerializer(recommendation)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 
@@ -1128,10 +964,10 @@ def get_recommendation_by_coll(request, id_coll, format=None):
 
 #выводит ВСЕХ юзиков, в том числе админов
 @api_view(['GET'])
-def get_users(request,format=None):
-    users = CustomUser.objects.all()
-    serializer = UserSerializer(users, many=True)
-    return Response(serializer.data)
+def get_users(request,id, format=None):
+    user = CustomUser.objects.get(user_id = id)
+    return Response([{"user_id": user.user_id, "user_name": user.username, "user_email": user.email, "is_superuser": user.is_superuser}],status=status.HTTP_200_OK)
+
 
 @api_view(['GET'])
 def get_admins(request,format=None):

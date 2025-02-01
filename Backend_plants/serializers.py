@@ -259,7 +259,7 @@ class UserLoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['user_id', 'email', 'is_superuser']
+        fields = ['user_id', 'email', 'username', 'is_superuser']
 
 class AdminSerializer(serializers.ModelSerializer):
     class Meta:
