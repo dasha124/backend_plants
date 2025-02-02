@@ -776,23 +776,15 @@ def update_collection(request, id):
         collection = Collection.objects.get(user=user, collection_id=id)
     except Collection.DoesNotExist:
         return Response(f"Коллекции c id={id} для пользователя {user} не существует", status=status.HTTP_404_NOT_FOUND)
-    
-    data=request.POST
-    image_file = request.FILES.get('image_url')
 
-    final_data = {
-        'collection_id': id,  # Получаем первое значение
-        'collection_name': data['collection_name'],  # Получаем первое значение
-    }
-    serializer = CollectionSerializer(instance=collection, data=final_data, partial=True)
-    # print("serial 0 =", serializer)
-    if serializer.is_valid():
-        # serializer.save()
-        new_coll_instance = serializer.save()
-        # print("new_plant_instance =", type(new_plant_instance))
-        pic_result = add_pic_coll(new_coll_instance, image_file)
-        return Response({"message": "Коллекция успешно обновлена в БД"}, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    data=request.data
+
+    collection.collection_name = data['collection_name']
+    collection.save()
+    serializer = CollectionSerializer(collection)
+
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 
  
 

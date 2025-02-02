@@ -177,7 +177,7 @@ class Plant(models.Model):
 class Collection(models.Model):
     collection_id = models.AutoField(primary_key=True, db_column='collection_id')
     collection_name = models.CharField(verbose_name='Название коллекции', max_length=150)
-    image_url_collection = models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото коллекции')
+    # image_url_collection = models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото коллекции')
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, default=1, verbose_name='Создатель', db_column='user_id')
     # recommendation = models.ForeignKey(Recommendation, on_delete=models.CASCADE, blank=True, null=True,  db_column='recommendation_id')
     includes_plants = models.ManyToManyField(Plant, through='CollectionPlant', null=False)
