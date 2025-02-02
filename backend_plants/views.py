@@ -956,17 +956,9 @@ def get_recommendation_by_coll(request, id_coll, format=None):
 
 #выводит ВСЕХ юзиков, в том числе админов
 @api_view(['GET'])
-def get_users(request,id, format=None):
+def get_user(request,id, format=None):
     user = CustomUser.objects.get(user_id = id)
     return Response([{"user_id": user.user_id, "user_name": user.username, "user_email": user.email, "is_superuser": user.is_superuser}],status=status.HTTP_200_OK)
-
-
-@api_view(['GET'])
-def get_admins(request,format=None):
-    admins = AdminUser.objects.all()
-    serializer = AdminSerializer(admins, many=True)
-    print(serializer)
-    return Response(serializer.data)
 
 
 @api_view(['DELETE'])
