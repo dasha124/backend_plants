@@ -3,6 +3,9 @@ from minio import Minio
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from rest_framework.response import *
 from Backend_plants.serializers import *
+import environ
+
+env = environ.Env()
 
 def process_file_upload(file_object: InMemoryUploadedFile, client, image_name):
     print("//process_file_upload")
@@ -17,10 +20,17 @@ def process_file_upload(file_object: InMemoryUploadedFile, client, image_name):
         return {"error": str(e)}
 
 def add_pic(new_plant: Plant, pic):
+    env = environ.Env()
+    # client = Minio(
+    #     endpoint=env('AWS_S3_ENDPOINT_HOST'),
+    #     access_key=env('AWS_ACCESS_KEY_ID'),
+    #     secret_key=env('AWS_SECRET_ACCESS_KEY'),
+    #     secure=env('MINIO_USE_SSL'),
+    # )
     client = Minio(           
         endpoint=settings.AWS_S3_ENDPOINT_HOST,
-        access_key=settings.AWS_ACCESS_KEY_ID,
-        secret_key=settings.AWS_SECRET_ACCESS_KEY,
+        access_key=env('AWS_ACCESS_KEY_ID'),
+        secret_key=env('AWS_SECRET_ACCESS_KEY'),
         secure=settings.MINIO_USE_SSL
     )
     print("minio new plant", new_plant)

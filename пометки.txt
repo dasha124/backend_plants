@@ -6,6 +6,8 @@
 
 sudo service redis stop
 
+sudo systemctl stop postgresql
+
 python manage.py runserver 0.0.0.0:8000
 
 sudo kill -9 $(sudo lsof -t -i:80)
