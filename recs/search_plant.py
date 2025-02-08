@@ -50,7 +50,8 @@ def predictImageData(modelName, filePath):
       
     img_uri = to_data_uri(resized_img)  
     input_image = Image.open(filePath) 
-    sess = onnxruntime.InferenceSession(r'/home/darya/Документы/GitHub/backend_plants/Backend_plants/media/model/cifar100_5.onnx') #<-Здесь требуется указать свой путь к модели
+    # sess = onnxruntime.InferenceSession(r'/home/darya/Документы/GitHub/backend_plants/Backend_plants/media/model/cifar100_5.onnx')
+    sess = onnxruntime.InferenceSession(r'/app/Backend_plants/media/model/cifar100_5.onnx')
     outputOFModel = np.argmax(sess.run(None, {'input': np.asarray([img]).astype(np.float32)}))
     print(sess.run(None, {'input': np.asarray([img]).astype(np.float32)}))
     print(outputOFModel)
