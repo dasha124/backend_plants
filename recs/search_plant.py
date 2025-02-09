@@ -1,11 +1,9 @@
 from django.shortcuts import render  
 from django.core.files.storage import FileSystemStorage  
-import onnxruntime  
 import numpy as np  
 from PIL import Image  
 from io import BytesIO  
 import base64  
-from torchvision import transforms  
 from rest_framework.decorators import api_view 
 from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -43,6 +41,7 @@ def predictImage(request):
     # return context
     return Response(context)
 
+
 def predictImageData(modelName, filePath):
     img = Image.open(filePath).convert("RGB")
     resized_img = img.resize((320, 320), Image.LANCZOS)
@@ -50,8 +49,19 @@ def predictImageData(modelName, filePath):
       
     img_uri = to_data_uri(resized_img)  
     input_image = Image.open(filePath) 
-    # sess = onnxruntime.InferenceSession(r'/home/darya/Документы/GitHub/backend_plants/Backend_plants/media/model/cifar100_5.onnx')
-    sess = onnxruntime.InferenceSession(r'/app/Backend_plants/media/model/cifar100_5.onnx')
+
+    try:
+        import onnxruntime
+    except ModuleNotFoundError:
+            print("!!!!!!!!")
+            score = "глициния"
+            plants = Plant.objects.all()
+            plants = plants.filter(
+                Q(status='a')
+            )
+            serializer = PlantSerializer(plants, many=True)
+            return serializer.data
+    sess = onnxruntime.InferenceSession(r'/home/darya/Документы/GitHub/backend_plants/Backend_plants/media/model/cifar100_5.onnx')
     outputOFModel = np.argmax(sess.run(None, {'input': np.asarray([img]).astype(np.float32)}))
     print(sess.run(None, {'input': np.asarray([img]).astype(np.float32)}))
     print(outputOFModel)
