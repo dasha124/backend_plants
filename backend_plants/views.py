@@ -779,49 +779,6 @@ def update_collection(request, id):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
- 
-
-# #@swagger_auto_schema(method='get')
-@api_view(['GET'])
-@permission_classes([IsUser])
-def get_recommendation(request, id, format=None):
-    token = get_access_token(request)
-    if not token:
-        # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response('Нет токена')
-    
-    payload = get_jwt_payload(token)
-    user_id = payload["user_id"]
-
-    curr_user = CustomUser.objects.get(user_id= user_id)
-    print("cccccccccccurrr uuser =", curr_user)
-
-    recommendation = get_object_or_404(Recommendation, recommendation_id=id)
-    serializer = RecommendationSerializer(recommendation)
-
-    if not curr_user.is_superuser:
-        if recommendation:
-            # Здесь вставить алгоритм для построения рекомендаций
-            # на основе карточек растений в collection.includes_plants
-            # Например, если у вас есть список всех растений в коллекции:
-            # collection = Collection.objects.get(user_id=user_id, recomendation = id_rec)
-            # recommended_plants = algorithm_to_get_recommendations(collection.includes_plants.all())
-
-                    # Здесь добавляем растения с id = 1 и 2 пока по умолчанию, потом добавим мл по рекомендашкам сюда
-            default_plants = Plant.objects.filter(plant_id__in=[1, 81, 82, 83])
-            base_weight = len(default_plants)
-            for index, plant in enumerate(default_plants):
-                weight = base_weight - index
-                recommendation_plant = RecommendationPlant(recommendation=recommendation, plant=plant, weight=weight)
-                recommendation_plant.save()
-
-            serializer = RecommendationSerializer(recommendation)
-            return Response(serializer.data)
-        else:
-            return Response("Нет данных по коллекции для формирования рекомендаций")
-    else:
-        return Response("Нет доступа к данным")
-
 
 # @permission_classes([IsUser])
 @api_view(['DELETE'])
