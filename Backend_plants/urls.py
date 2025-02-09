@@ -40,7 +40,7 @@ urlpatterns = [
    path(r'api/plant/search', predictImage, name='search_plant'),
    path(r'api/recommendations/coll/<int:id_coll>/', views.get_recommendation_by_coll, name='get_recommendation_by_coll'),
    path(r'api/recommendations/plant/<int:id_plant>/', views.get_recommendation_by_plant, name='get_recommendation_by_plant'),
-   # path(r'api/recommendarions/Expert/', views.get_recommendation_by_Expert, name='get_recommendation'),
+   path(r'api/recommendarions/Expert/', views.get_recommendation_by_Expert, name='get_recommendation'),
 
    path(r'api/from_minio/', views.get_image_sizes_from_minio, name='get_image_sizes_from_minio'),
 

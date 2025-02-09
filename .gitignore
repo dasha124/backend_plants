@@ -13,3 +13,7 @@ VAK_experiments
 .vscode
 venv_1
 venv
+cifar_cnn_fine.pt
+cifar_cnn_fine.pth
+test_5 (копия).ipynb
+подготовка_модели_для_рекомендации.ipynb

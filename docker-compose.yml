@@ -15,7 +15,7 @@ services:
     depends_on:
       - db
     restart: always
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:${PORT}"
+    command: sh -c "python manage.py migrate --run-syncdb && python manage.py migrate && python manage.py runserver 0.0.0.0:${PORT}"
 
   db:
     image: postgres:latest

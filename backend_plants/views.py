@@ -239,40 +239,33 @@ def get_plants(request, format=None):
         print("light_filter =", light_filter)
         plants = plants.filter(properties__light__icontains=light_filter)
 
-
-    if token not in ['undefined', 'None']:
-        payload = get_jwt_payload(token)
-        user_id = payload["user_id"]
-
-        try:
-            curr_user = CustomUser.objects.get(user_id= user_id)
-        except CustomUser.DoesNotExist:
-            curr_user = None
-        try:
-            admin_user = AdminUser.objects.get(admin_id = user_id)
-        except AdminUser.DoesNotExist:
-            admin_user = None
-        print("uuuuuuu", curr_user)
-
-        if admin_user:
-            # collectionID = 0 # так то коллекций у админов нет
-            pass
-
-        # if not admin_user:
+        token = get_access_token(request)
+        if not token:
+            plants = plants.filter(Q(status='a'))
+            serializer = PlantSerializer(plants, many=True)
+            return Response(serializer.data)
         else:
-            plants = plants.filter(status='a')
+            payload = get_jwt_payload(token)
+            user_id = payload["user_id"]
+            try:
+                curr_user = CustomUser.objects.get(user_id= user_id)
+            except CustomUser.DoesNotExist:
+                curr_user = None
+            try:
+                admin_user = AdminUser.objects.get(admin_id = user_id)
+            except AdminUser.DoesNotExist:
+                admin_user = None
+            print("uuuuuuu", curr_user)
 
-        serializer = PlantSerializer(plants, many=True)
-        return Response(serializer.data)
-    # if token == 'undefined':
-    else:
-        collectionID=0
-        # print('here')
+            if admin_user:
+                pass
+            else:
+                plants = plants.filter(status='a')
 
-        plants = plants.filter(Q(status='a'))
-        serializer = PlantSerializer(plants, many=True)
-        return Response(serializer.data)
+            serializer = PlantSerializer(plants, many=True)
+            return Response(serializer.data)
 
+        
 
 # информация о растении (услуге)
 #@swagger_auto_schema(method='get')
@@ -833,17 +826,6 @@ def get_recommendation(request, id, format=None):
 # @permission_classes([IsUser])
 @api_view(['DELETE'])
 def del_recommendation(request, id, format=None):
-    # token = get_access_token(request)
-    # if not token:
-    #     # return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
-    #     return Response('Нет токена')
-    
-    # payload = get_jwt_payload(token)
-    # user_id = payload["user_id"]
-
-    # curr_user = CustomUser.objects.get(user_id= user_id)
-    # print("cccccccccccurrr uuser =", curr_user)
-
     recommendation = get_object_or_404(Recommendation, recommendation_id=id)
     recommendation.delete()
     return Response(f"Рекомендация {id} удалена из Базы данных", status=status.HTTP_204_NO_CONTENT)
@@ -946,8 +928,12 @@ def get_recommendation_by_coll(request, id_coll, format=None):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-
-
+@permission_classes([AllowAny])
+@api_view(['GET'])
+def get_recommendation_by_Expert(request, format=None):
+    plants= Plant.objects.all()
+    serializer = GetPlantSerializer(plants, many=True)
+    return Response(serializer.data)
 
 # #@swagger_auto_schema(method='get')
 # @api_view(['GET'])
@@ -980,72 +966,6 @@ def obj_delete_user(request, id, format=None):
 
     user.delete()
     return Response(f"Пользователь {id} удален из Базы данных", status=status.HTTP_204_NO_CONTENT)
-
-
-# #@swagger_auto_schema(method='put', request_body=DrugSerializer)
-# @api_view(['PUT'])
-# @permission_classes([IsManager])
-# @authentication_classes([])
-# def drug_update_status_admin(request, id):
-#     if not Medical_drug.objects.filter(id=id).exists():
-#         return Response(f"Препарата с таким id не существует")
-    
-#     STATUSES = [0, 1, 2, 3, 4]
-#     request_st = request.data["status"]
-
-#     if request_st not in STATUSES:
-#         return Response("Статус не корректен")
-    
-#     drug = Medical_drug.objects.get(id=id)
-#     drug_st = drug.status
-#     print("drug_st =", drug_st)
-
-#     if request_st == 2 or request_st == 3:
-#         drug.status = request_st
-#         drug.save()
-
-#         serializer = DrugSerializer(drug, many=False)
-#         return Response(serializer.data)
-#     else:
-#         return Response("Изменение статуса невозможно")
-
-
-
-
-
-# #@swagger_auto_schema(method='put')
-# @api_view(['PUT'])
-# @permission_classes([AllowAny])
-# def async_result(request, format=None):
-#     try:
-#         # Преобразуем строку в объект Python JSON
-#         json_data = json.loads(request.body.decode('utf-8'))
-#         print(json_data)
-#         const_token = 'my_secret_token'
-
-#         if const_token != json_data['token']:
-#             return Response(data={'message': 'Ошибка, токен не соответствует'}, status=status.HTTP_403_FORBIDDEN)
-
-       
-#         try:
-#             # Выводит конкретную заявку создателя
-#             drug = get_object_or_404(Medical_drug, id=json_data['id_test'])
-#             drug.test_status = json_data['test_status']
-          
-#             drug.save()
-#             data_json = {
-#                 'id': drug.id,
-#                 'test_status': drug.get_test_status_display_word(),
-#                 'status': drug.get_grug_display_word()
-#             }
-#             return Response(data={'message': 'Статус тестированя успешно обновлен', 'data': data_json},
-#                             status=status.HTTP_200_OK)
-#         except ValueError:
-#             return Response({'message': 'Недопустимый формат преобразования'}, status=status.HTTP_400_BAD_REQUEST)
-#     except json.JSONDecodeError as e:
-#         print(f'Error decoding JSON: {e}')
-#         return Response(data={'message': 'Ошибка декодирования JSON'}, status=status.HTTP_400_BAD_REQUEST)
-    
 
 
 # Пример использования:

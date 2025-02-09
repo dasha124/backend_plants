@@ -5,8 +5,11 @@
 и файл с фотографией логотипа компании, и добавляет этот файл в баскет logo.
 
 sudo service redis stop
+redis-server
 
 sudo systemctl stop postgresql
+sudo systemctl start postgresql
+   
 
 python manage.py runserver 0.0.0.0:8000
 

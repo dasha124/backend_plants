@@ -68,8 +68,13 @@ REST_FRAMEWORK = {
     ]
 }
 
-REDIS_HOST = '0.0.0.0'
-REDIS_PORT = 6379
+# REDIS_HOST = '0.0.0.0'
+# REDIS_PORT = 6379
+
+REDIS_HOST = env('REDIS_HOST'),
+REDIS_PORT = env('REDIS_PORT'),
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -192,15 +197,15 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',  # Используйте ваш порт, если он отличается
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    }
-}
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django_redis.cache.RedisCache',
+#         'LOCATION': 'redis://127.0.0.1:6379/1',  # Используйте ваш порт, если он отличается
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#         }
+#     }
+# }
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
