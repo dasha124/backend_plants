@@ -374,7 +374,7 @@ def add_new_plant(request, format=None):
             pic_result = add_pic(new_plant_instance, image_file)
             last_plant = Plant.objects.last()
             plant_id_new = getattr(last_plant, 'plant_id', None)
-            admin_user = AdminUser.objects.get(admin_id=user_id)
+            admin_user = AdminUser.objects.get(user_id=user_id)
             interaction = Interaction.objects.create(action_id=1, plant_id=plant_id_new, admin=admin_user)
             interaction.save()  
             return Response({"message": "Растение успешно добавлено в БД"}, status=status.HTTP_201_CREATED)

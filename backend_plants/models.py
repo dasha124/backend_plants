@@ -117,6 +117,7 @@ class Plant_Subclass(models.Model):
 class Plant_Type(models.Model):
     plant_type_id = models.AutoField(primary_key=True, db_column='plant_type_id')
     type_name = models.CharField(max_length=100, verbose_name='Название подкласса растения')
+    image_url_type= models.CharField(max_length=255, blank=True, null=True, verbose_name='Фото типа растения')
     plant_subclass = models.ForeignKey(Plant_Subclass, verbose_name='Название подкласса растения', related_name='types', null=True, blank=True, on_delete=models.CASCADE, db_column='plant_subclass_id')
 
     def __str__(self):

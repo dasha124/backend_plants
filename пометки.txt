@@ -9,6 +9,8 @@ redis-server
 
 sudo systemctl stop postgresql
 sudo systemctl start postgresql
+
+sudo docker volume prune
    
 
 python manage.py runserver 0.0.0.0:8000

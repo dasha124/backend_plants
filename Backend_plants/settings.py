@@ -129,13 +129,18 @@ WSGI_APPLICATION = 'Backend_plants.wsgi.application'
 #         "NAME": "mydatabase",
 #     }
 # }
+
+
+
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': env('DATABASE_NAME'),
         'USER': env('DATABASE_USER'),
         'PASSWORD': env('DATABASE_PASSWORD'),
-        'HOST': env('DATABASE_HOST'),
+        # 'HOST': env('DATABASE_HOST'),
+        'HOST': 'localhost',
         'PORT': env('DATABASE_PORT'),
         'OPTIONS': {'options': '-c client_encoding=utf8'},
         'TEST_CHARSET': 'utf8',
@@ -143,27 +148,18 @@ DATABASES = {
 }
 
 
-
 STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-# AWS_STORAGE_BUCKET_NAME = 'bucket_name'     # Бакет должен уже быть создан
-# AWS_ACCESS_KEY_ID = 'minio'
-# AWS_SECRET_ACCESS_KEY = 'minio124'
-# AWS_S3_ENDPOINT_URL = 'http://127.0.0.1:9000'
 
 AWS_STORAGE_BUCKET_NAME = 'logo'
-# AWS_ACCESS_KEY_ID = 'minioadmin'
-# AWS_SECRET_ACCESS_KEY = 'minioadmin'
 AWS_S3_ENDPOINT_URL = 'localhost:9000'
 AWS_S3_ENDPOINT_HOST = 'localhost:9000'
 MINIO_USE_SSL = False
-
-# AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID'),
-# AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME'),
-# AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY'),
 # AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL'),
-# AWS_S3_ENDPOINT_HOST = env('AWS_S3_ENDPOINT_HOST'),
-# MINIO_USE_SSL = env('MINIO_USE_SSL'),
+# AWS_S3_ENDPOINT_HOST = env('AWS_S3_ENDPOINT_HOST')
+# MINIO_USE_SSL = env('MINIO_USE_SSL')
+
+
 
 TIME_ZONE = 'Europe/Moscow'
 

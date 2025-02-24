@@ -15,23 +15,20 @@ def process_file_upload(file_object: InMemoryUploadedFile, client, image_name):
     print("Объем файла:", file_object.size)
     try:
         client.put_object('logo', image_name, file_object, file_object.size)
-        return f"http://localhost:9000/logo/{image_name}"
+        return f"http://{settings.AWS_S3_ENDPOINT_HOST}/logo/{image_name}"
     except Exception as e:
         return {"error": str(e)}
 
 def add_pic(new_plant: Plant, pic):
     env = environ.Env()
-    # client = Minio(
-    #     endpoint=env('AWS_S3_ENDPOINT_HOST'),
-    #     access_key=env('AWS_ACCESS_KEY_ID'),
-    #     secret_key=env('AWS_SECRET_ACCESS_KEY'),
-    #     secure=env('MINIO_USE_SSL'),
-    # )
+
     client = Minio(           
         endpoint=settings.AWS_S3_ENDPOINT_HOST,
+        # endpoint=env('AWS_S3_ENDPOINT_HOST'),
         access_key=env('AWS_ACCESS_KEY_ID'),
         secret_key=env('AWS_SECRET_ACCESS_KEY'),
-        secure=settings.MINIO_USE_SSL
+        secure=settings.MINIO_USE_SSL,
+        # secure=env('MINIO_USE_SSL'),
     )
     print("minio new plant", new_plant)
     
