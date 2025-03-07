@@ -238,32 +238,34 @@ def get_plants(request, format=None):
     if light_filter:
         print("light_filter =", light_filter)
         plants = plants.filter(properties__light__icontains=light_filter)
+    serializer = PlantSerializer(plants, many=True)
+    return Response(serializer.data)
 
-        token = get_access_token(request)
-        if not token:
-            plants = plants.filter(Q(status='a'))
-            serializer = PlantSerializer(plants, many=True)
-            return Response(serializer.data)
-        else:
-            payload = get_jwt_payload(token)
-            user_id = payload["user_id"]
-            try:
-                curr_user = CustomUser.objects.get(user_id= user_id)
-            except CustomUser.DoesNotExist:
-                curr_user = None
-            try:
-                admin_user = AdminUser.objects.get(admin_id = user_id)
-            except AdminUser.DoesNotExist:
-                admin_user = None
-            print("uuuuuuu", curr_user)
+        # token = get_access_token(request)
+        # if not token:
+        #     plants = plants.filter(Q(status='a'))
+        #     serializer = PlantSerializer(plants, many=True)
+        #     return Response(serializer.data)
+        # else:
+        #     payload = get_jwt_payload(token)
+        #     user_id = payload["user_id"]
+        #     try:
+        #         curr_user = CustomUser.objects.get(user_id= user_id)
+        #     except CustomUser.DoesNotExist:
+        #         curr_user = None
+        #     try:
+        #         admin_user = AdminUser.objects.get(admin_id = user_id)
+        #     except AdminUser.DoesNotExist:
+        #         admin_user = None
+        #     print("uuuuuuu", curr_user)
 
-            if admin_user:
-                pass
-            else:
-                plants = plants.filter(status='a')
+        #     if admin_user:
+        #         pass
+        #     else:
+        #         plants = plants.filter(status='a')
 
-            serializer = PlantSerializer(plants, many=True)
-            return Response(serializer.data)
+        #     serializer = PlantSerializer(plants, many=True)
+        #     return Response(serializer.data)
 
         
 
