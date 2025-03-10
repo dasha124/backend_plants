@@ -55,12 +55,8 @@ def predictImageData(modelName, filePath):
     except ModuleNotFoundError:
             print("!!!!!!!!")
             score = "глициния"
-            plants = Plant.objects.all()
-            plants = plants.filter(
-                Q(status='a')
-            )
-            serializer = PlantSerializer(plants, many=True)
-            return serializer.data
+            
+            return ({"type": score})
     sess = onnxruntime.InferenceSession(r'/home/darya/Документы/GitHub/backend_plants/Backend_plants/media/model/cifar100_5.onnx')
     outputOFModel = np.argmax(sess.run(None, {'input': np.asarray([img]).astype(np.float32)}))
     print(sess.run(None, {'input': np.asarray([img]).astype(np.float32)}))
@@ -70,15 +66,7 @@ def predictImageData(modelName, filePath):
     print("!!!!!!!!")
     score = imageClassList[outputOFModel]
     print("score =", score)
-    # return score, img_uri 
-    plants = Plant.objects.all()
-    plants = plants.filter(
-        Q(plant_name__icontains = score.lower()),
-        Q(status='a')
-    )
-
-    serializer = PlantSerializer(plants, many=True)
-    return serializer.data
+    return ({"type": score})
 
   
 def to_numpy(tensor):  

@@ -84,6 +84,7 @@ def get_access_token(request):
         if authorization_header and authorization_header.lower().startswith("bearer "):
             token = authorization_header[len("bearer "):]
         else:
-            token = authorization_header
+            token = None
     return token
+
 

@@ -25,9 +25,7 @@ urlpatterns = [
    path(r'api/plants/add_plant/', views.add_new_plant, name='add_new_plant'), # (post)
    path(r'api/plants/<int:id>/update_plant/', views.update_plant, name='update_plant'), # (put)
    path(r'api/plants/<int:id>/delete_plant/', views.delete_plant, name='delete_plant'), # (del)
-   path(r'api/plants/<int:id>/obj_delete_plant/', views.obj_delete_plant, name='obj_delete_plant'), # (del)
-   path(r'api/plants/<int:id_plant>/<int:id_coll>/add_plant_to_collection/', views.add_plant_to_collection, name='add_plant_to_collection'), # (post)
-
+   # path(r'api/plants/<int:id>/obj_delete_plant/', views.obj_delete_plant, name='obj_delete_plant'), # (del)
 
    # для избранных коллекций растений
    path(r'api/collections/', views.get_collections, name='get_collections'),
@@ -35,6 +33,7 @@ urlpatterns = [
    path(r'api/collections/create/', views.create_collection, name='create_collection'),
    path(r'api/collections/<int:id>/update/', views.update_collection, name='update_collection'),
    path(r'api/collections/<int:id>/delete/', views.delete_collection,name='delete_collection'),
+   path(r'api/collections/<int:id_plant>/<int:id_coll>/add_plant_to_collection/', views.add_plant_to_collection, name='add_plant_to_collection'), # (post)
    path(r'api/collections/<int:id_collection>/<int:id_plant>/delete_plant_from_collection/', views.delete_plant_from_collection, name='delete_plant_from_colln'),
    
    path(r'api/plant/search', predictImage, name='search_plant'),
