@@ -67,16 +67,16 @@ def put_img_to_index(image_data, image_name):
     else:
         existing_index = []
 
-    print('\n######################################################################################################################################\n')
-    print("existing_index")
-    print(existing_index, len(existing_index))
+    # print('\n######################################################################################################################################\n')
+    # print("existing_index")
+    # print(existing_index, len(existing_index))
     updated_index = existing_index.copy()  # Создаем копию существующего индекса
     for item in index:
         if item not in updated_index:  # Проверяем, есть ли элемент уже в списке
             updated_index.append(item) 
-    print('\n######################################################################################################################################\n')
-    print("updated_index")
-    print(updated_index, len(updated_index))
+    # print('\n######################################################################################################################################\n')
+    # print("updated_index")
+    # print(updated_index, len(updated_index))
 
     with open(file_path, 'w') as f:
         json.dump(updated_index, f)
@@ -94,13 +94,18 @@ def put_img_to_index(image_data, image_name):
     vects_norm_np = vects_norm.numpy()
 
     file_path = './recs/vects_1.npy'
-    new_vectors = vects_norm_np
+
+    vects_norm_np = vects_norm_np.astype(np.float16)
+    vects_norm_np_q = vects_norm_np * 128
+    vects_norm_np_q = vects_norm_np_q.astype(np.int8)
 
     if os.path.exists(file_path):
         existing_vectors = np.load(file_path)
-        combined_vectors = np.concatenate((existing_vectors, new_vectors), axis=0)
+        for vec in vects_norm_np_q:
+            if not np.any(np.all(existing_vectors == vec, axis=1)):
+                existing_vectors = np.concatenate((existing_vectors, vec[np.newaxis, :]), axis=0)
     else:
-        combined_vectors = new_vectors
+        existing_vectors = vects_norm_np_q
 
     with open(file_path, 'wb') as f:
-        np.save(f, combined_vectors)
+        np.save(f, existing_vectors)

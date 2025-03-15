@@ -788,16 +788,22 @@ def del_recommendation(request, id, format=None):
 # здесь пока что фотка начального растения - в топе 1 по похожести, ее надо убрать
 @api_view(['GET'])
 def get_recommendation_by_plant(request, id_plant, format=None):
-    with open('recs/index.json', 'rb') as f:
+    with open('recs/index_1.json', 'rb') as f:
         index = json.load(f) 
-    with open('recs/vects_q.npy', 'rb') as f:
+    with open('recs/vects_1.npy', 'rb') as f:
         vects = np.load(f)  
+        
 
+    print("##################################################################################################################################")   
+    print(index)
+    print("##################################################################################################################################")   
     # id_plant - id из бд
     id_plant0 = id_plant
     plant_name = get_object_or_404(Plant, plant_id=id_plant).plant_name
+    print("plant_name =", plant_name)
     try:
         id_plant = index.index(plant_name)
+        print("id_plant in INDEX =", id_plant)
     except ValueError:
         print("Замена названия на дефолт!!!!!!")
         id_plant = index.index('Бархатцы французские')
@@ -805,7 +811,24 @@ def get_recommendation_by_plant(request, id_plant, format=None):
     try: 
         recommendation = Recommendation.objects.get(plant=id_plant0)
         if recommendation:
-            return Response(f"Рекомендация для растения с {id_plant0} уже есть в Базе данных", status=status.HTTP_201_CREATED)
+            rec_plants = RecommendationPlant.objects.filter(recommendation_id = recommendation).delete()
+            # serializer = RecommendationSerializer(recommendation)
+            # return Response(serializer.data, status=status.HTTP_200_OK)
+            viewed_ids = [id_plant]
+            res = get_sim_mean(viewed_ids, vects)
+            res_ids = res['similar_ind']
+            similar_ids = list(map(int, res['similar_ind']))
+            output_len = len(similar_ids)
+            for rec_plant_id in similar_ids:
+                ind_plant_name = index[rec_plant_id]
+                print("rec_plant_id = ", rec_plant_id, "index[rec_plant_id] = ", index[rec_plant_id])
+                plant = get_object_or_404(Plant, plant_name = ind_plant_name)
+                RecommendationPlant.objects.create(recommendation=recommendation, plant=plant, weight=output_len)
+                output_len -= 1
+            
+            serializer = RecommendationSerializer(recommendation)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
     except Recommendation.DoesNotExist:
         viewed_ids = [id_plant]
         res = get_sim_mean(viewed_ids, vects)
@@ -818,15 +841,14 @@ def get_recommendation_by_plant(request, id_plant, format=None):
         for rec_plant_id in similar_ids:
 
             ind_plant_name = index[rec_plant_id]
+            print("rec_plant_id = ", rec_plant_id, "index[rec_plant_id] = ", index[rec_plant_id])
             plant = get_object_or_404(Plant, plant_name = ind_plant_name)
             RecommendationPlant.objects.create(recommendation=new_rec, plant=plant, weight=output_len)
             output_len -= 1
         
         serializer = RecommendationSerializer(new_rec)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-    serializer = RecommendationSerializer(recommendation)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 
@@ -926,7 +948,7 @@ def obj_delete_user(request, id, format=None):
 @api_view(['GET'])
 def get_image_sizes_from_minio(request, format=None):
     # plant_list = Plant.objects.filter(plant_id__in = [1, 2])
-    plant_list = Plant.objects.all().order_by('plant_name')[:4]
+    plant_list = Plant.objects.all().order_by('plant_name')
     print(plant_list)
     # sizes = get_image_sizes(plant_list)
     sizes = get_images_from_minio(plant_list)
