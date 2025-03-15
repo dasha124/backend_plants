@@ -31,9 +31,10 @@ from django.core.cache import cache
 from base64 import b64encode
 from django.core.files.base import ContentFile
 import requests
-from backend_plants.minio import *
+from backend_plants.to_minio import *
 from backend_plants.get_pic_from_minio import *
 from recs.recs import *
+from recs.imgs_from_minio import *
 # from drf_yasg.utils import swagger_auto_schema
 
 
@@ -925,7 +926,9 @@ def obj_delete_user(request, id, format=None):
 @api_view(['GET'])
 def get_image_sizes_from_minio(request, format=None):
     # plant_list = Plant.objects.filter(plant_id__in = [1, 2])
-    plant_list = Plant.objects.all()
-    sizes = get_image_sizes(plant_list)
+    plant_list = Plant.objects.all().order_by('plant_name')[:4]
+    print(plant_list)
+    # sizes = get_image_sizes(plant_list)
+    sizes = get_images_from_minio(plant_list)
     # print(sizes)
     return Response(len(sizes))

@@ -75,10 +75,21 @@ class PlantSerializer(serializers.ModelSerializer):
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)
+
         representation['plant_class'] = representation['plant_class']['class_name']  # Convert plant_class
         if representation['plant_subclass']:
             representation['plant_subclass'] = representation['plant_subclass']['subclass_name']  # Convert plant_subclass
         representation['plant_type'] = representation['plant_type']['type_name']  # Convert plant_type
+        
+        properties = representation.get('properties', {})
+        formatted_properties = {}
+        for key, value in properties.items():
+            formatted_key = key.lower().replace(' ', '_')  # Приводим к нужному формату
+            if formatted_key == 'ph_siol':
+                formatted_key = 'ph_soil'
+            formatted_properties[formatted_key] = value
+        
+        representation['properties'] = formatted_properties
         return representation
     # def get_plant_class(self, obj):
     #     return obj.plant_class.class_name if obj.plant_class else None
@@ -160,12 +171,25 @@ class CollectionSerializer(serializers.ModelSerializer):
 class CollectionsSerializer(serializers.ModelSerializer):
 
     plant = PlantSerializer(read_only = True, many=True, source='includes_plants')
-    user_id = serializers.CharField(source='user.username', read_only=True)
+    user_id = serializers.CharField(source='user.user_id', read_only=True)
+    time_create = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     
     class Meta:
         model = Collection
-        exclude = ['includes_plants']
+        exclude = ['includes_plants', 'user']
+    
+    def get_time_create(self, obj):
+        return obj.time_create.strftime("%H:%M:%S")
+    
+    def get_status(self, obj):
+        # Возвращаем текстовое представление статуса
+        status_mapping = {
+            1: "Сформирована",
+            2: "Удалена"
+        }
+        return status_mapping.get(obj.status, "Неизвестный статус")
 
 class CollectionPlantSerializer(serializers.ModelSerializer):
     collection_name = serializers.CharField(source='collection.collection_name', read_only=True)

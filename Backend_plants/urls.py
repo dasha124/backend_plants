@@ -7,6 +7,7 @@ from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
 from recs.search_plant import *
+from recs.imgs_from_minio import *
 
 router = routers.DefaultRouter()
 

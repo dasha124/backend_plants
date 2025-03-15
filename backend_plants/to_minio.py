@@ -15,7 +15,7 @@ def process_file_upload(file_object: InMemoryUploadedFile, client, image_name):
     print("Объем файла:", file_object.size)
     try:
         client.put_object('logo', image_name, file_object, file_object.size)
-        return f"http://{settings.AWS_S3_ENDPOINT_HOST}/logo/{image_name}"
+        return f"{settings.AWS_S3_ENDPOINT_HOST}/logo/{image_name}"
     except Exception as e:
         return {"error": str(e)}
 
