@@ -808,45 +808,51 @@ def get_recommendation_by_plant(request, id_plant, format=None):
         print("Замена названия на дефолт!!!!!!")
         id_plant = index.index('Бархатцы французские')
 
+    viewed_ids = [id_plant]
+    print("viewed_ids = [id_plant] =", viewed_ids)
+    res = get_sim_mean(viewed_ids, vects)
+    res_ids = res['similar_ind']
+    similar_ids = list(map(int, res['similar_ind']))
+    output_len = len(similar_ids)
+
     try: 
         recommendation = Recommendation.objects.get(plant=id_plant0)
+
         if recommendation:
-            rec_plants = RecommendationPlant.objects.filter(recommendation_id = recommendation).delete()
+            RecommendationPlant.objects.filter(recommendation_id = recommendation).delete()
             # serializer = RecommendationSerializer(recommendation)
             # return Response(serializer.data, status=status.HTTP_200_OK)
-            viewed_ids = [id_plant]
-            res = get_sim_mean(viewed_ids, vects)
-            res_ids = res['similar_ind']
-            similar_ids = list(map(int, res['similar_ind']))
-            output_len = len(similar_ids)
             for rec_plant_id in similar_ids:
                 ind_plant_name = index[rec_plant_id]
-                print("rec_plant_id = ", rec_plant_id, "index[rec_plant_id] = ", index[rec_plant_id])
+                print("rec_plant_id = ", rec_plant_id, "index[rec_plant_id] = ", index[rec_plant_id], ind_plant_name)
                 plant = get_object_or_404(Plant, plant_name = ind_plant_name)
-                RecommendationPlant.objects.create(recommendation=recommendation, plant=plant, weight=output_len)
-                output_len -= 1
+                print(plant)
+                if plant.status=="a":
+                    print("a =", plant, plant.plant_id)
+                    RecommendationPlant.objects.create(recommendation=recommendation, plant=plant, weight=output_len)
+                    output_len -= 1
+                else:
+                    print("d =", plant, plant.plant_id)
             
-            serializer = RecommendationSerializer(recommendation)
+            serializer = RecommendationForPlantSerializer(recommendation)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
     except Recommendation.DoesNotExist:
-        viewed_ids = [id_plant]
-        res = get_sim_mean(viewed_ids, vects)
-        res_ids = res['similar_ind']
-        similar_ids = list(map(int, res['similar_ind']))
-        output_len = len(similar_ids)
-
-        new_rec = Recommendation.objects.create(type_rec_id=1, plant_id=id_plant0, collection=None)
-
+        new_rec = Recommendation.objects.create(plant_id=id_plant0, collection=None)
+        print("Recommendation.DoesNotExist similar_ids =", similar_ids)
         for rec_plant_id in similar_ids:
 
             ind_plant_name = index[rec_plant_id]
-            print("rec_plant_id = ", rec_plant_id, "index[rec_plant_id] = ", index[rec_plant_id])
+            print("rec_plant_id = ", rec_plant_id, "index[rec_plant_id] = ", index[rec_plant_id], ind_plant_name)
             plant = get_object_or_404(Plant, plant_name = ind_plant_name)
-            RecommendationPlant.objects.create(recommendation=new_rec, plant=plant, weight=output_len)
-            output_len -= 1
-        
-        serializer = RecommendationSerializer(new_rec)
+            if plant.status=="a":
+                print("a =", plant, plant, plant.plant_id)
+                RecommendationPlant.objects.create(recommendation=new_rec, plant=plant, weight=output_len)
+                output_len -=1
+            else:
+                print("d =", plant, plant.plant_id)
+            
+        serializer = RecommendationForPlantSerializer(new_rec)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -854,26 +860,26 @@ def get_recommendation_by_plant(request, id_plant, format=None):
 
 
 @api_view(['GET'])
+@permission_classes([IsUser])
 def get_recommendation_by_coll(request, id_coll, format=None):
-    with open('recs/index.json', 'rb') as f:
+
+    token = get_access_token(request)
+    if not token:
+        return Response('Нет токена')
+    payload = get_jwt_payload(token)
+    user_id = payload["user_id"]
+    user = get_object_or_404(CustomUser, user_id=user_id)
+
+    with open('recs/index_1.json', 'rb') as f:
         index = json.load(f) 
-    with open('recs/vects_q.npy', 'rb') as f:
-        vects = np.load(f)  
-
-    # collection = get_object_or_404(Collection, collection_id=id_coll)
-    try:
-        collection = Collection.objects.get(collection_id=id_coll)
-        collection.delete()
-    except Collection.DoesNotExist:
-        return Response(f"Коллекции с {id_coll} не найдено в Базе данных", status=status.HTTP_404_NOT_FOUND)
-
+    with open('recs/vects_1.npy', 'rb') as f:
+        vects = np.load(f)
+    
+    collection = Collection.objects.get(collection_id=id_coll)
     plant_ids = collection.includes_plants.values_list('plant_id', flat=True)
-
-    # Преобразуем QuerySet в список ID растений
     plant_ids_list = list(plant_ids)
     print(plant_ids_list)
 
-    plant_ids_list0 = plant_ids_list
     ids = []
     for id in plant_ids_list:
         plant_name = get_object_or_404(Plant, plant_id=id).plant_name
@@ -887,21 +893,61 @@ def get_recommendation_by_coll(request, id_coll, format=None):
 
     viewed_ids = ids
     res = get_sim_mean(viewed_ids, vects)
-    res_ids = res['similar_ind']
     similar_ids = list(map(int, res['similar_ind']))
     output_len = len(similar_ids)
 
-    new_rec = Recommendation.objects.create(type_rec_id=2, collection_id=id_coll, plant=None)
-
-    for rec_plant_id in similar_ids:
-
-        ind_plant_name = index[rec_plant_id]
-        plant = get_object_or_404(Plant, plant_name = ind_plant_name)
-        RecommendationPlant.objects.create(recommendation=new_rec, plant=plant, weight=output_len)
-        output_len -= 1
+    try:
+        recommendation = Recommendation.objects.get(collection=id_coll)
+        if recommendation:
+            RecommendationPlant.objects.filter(recommendation_id = recommendation).delete()
+            
+            for rec_plant_id in similar_ids:
+                ind_plant_name = index[rec_plant_id]
+                plant = get_object_or_404(Plant, plant_name = ind_plant_name)
+                print(plant)
+                if plant.status=="a":
+                    print("a =", plant, plant.plant_id)
+                    RecommendationPlant.objects.create(recommendation=recommendation, plant=plant, weight=output_len)
+                    output_len -= 1
+                else:
+                    print("d =", plant, plant.plant_id)
+            
+            serializer = RecommendationForCollectionSerializer(recommendation)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
     
-    serializer = RecommendationSerializer(new_rec)
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
+    except Recommendation.DoesNotExist:
+        new_rec = Recommendation.objects.create(plant=None, collection_id=id_coll, user_id=user.user_id)
+        
+        for rec_plant_id in similar_ids:
+            ind_plant_name = index[rec_plant_id]
+            print("rec_plant_id = ", rec_plant_id, "index[rec_plant_id] = ", index[rec_plant_id], ind_plant_name)
+            plant = get_object_or_404(Plant, plant_name = ind_plant_name)
+            if plant.status=="a":
+                print("a =", plant, plant, plant.plant_id)
+                RecommendationPlant.objects.create(recommendation=new_rec, plant=plant, weight=output_len)
+                output_len -=1
+            else:
+                print("d =", plant, plant.plant_id)
+            
+        serializer = RecommendationForCollectionSerializer(new_rec)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+        
+        
+        
+        
+        pass
+        # создаем рекомендацию по коллекции
+
+    # collection = get_object_or_404(Collection, collection_id=id_coll)
+    try:
+        collection = Collection.objects.get(collection_id=id_coll)
+        collection.delete()
+    except Collection.DoesNotExist:
+        return Response(f"Коллекции с {id_coll} не найдено в Базе данных", status=status.HTTP_404_NOT_FOUND)
+
+    
 
 
 @permission_classes([AllowAny])

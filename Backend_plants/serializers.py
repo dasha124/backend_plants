@@ -199,22 +199,30 @@ class CollectionPlantSerializer(serializers.ModelSerializer):
         model = CollectionPlant
         fields = ['collection_plant_id', 'collection_name', 'plant', 'date_add', 'time_add']
 
-class RecommendationSerializer(serializers.ModelSerializer):
 
-    plant = PlantSerializer(read_only = True, many=True, source='includes_plants')
-    
+
+class RecommendationForPlantSerializer(serializers.ModelSerializer):
+
+    plants = PlantSerializer(read_only = True, many=True, source='includes_plants')
+    plant_id = serializers.PrimaryKeyRelatedField(source='plant', read_only=True)
+    collection_id = serializers.PrimaryKeyRelatedField(source='collection', read_only=True)
+
     class Meta:
         model = Recommendation
-        fields= "__all__"
+        exclude = ['includes_plants', 'plant', 'user', 'collection', 'last_modified_date', 'last_modified_time']
 
 
-class RecommendationsSerializer(serializers.ModelSerializer):
 
-    plant = PlantSerializer(read_only = True, many=True, source='includes_plants')
-    
+class RecommendationForCollectionSerializer(serializers.ModelSerializer):
+
+    plants = PlantSerializer(read_only = True, many=True, source='includes_plants')
+    plant_id = serializers.PrimaryKeyRelatedField(source='plant', read_only=True)
+    collection_id = serializers.PrimaryKeyRelatedField(source='collection', read_only=True)
+    user_id = serializers.CharField(source='user.user_id', read_only=True)
+
     class Meta:
         model = Recommendation
-        exclude = ['includes_plants']
+        exclude = ['includes_plants', 'user', 'plant', 'collection', 'last_modified_date', 'last_modified_time']
 
 
 class AdminRegisterSerializer(serializers.ModelSerializer):
