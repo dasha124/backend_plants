@@ -168,9 +168,16 @@ class CollectionSerializer(serializers.ModelSerializer):
         fields= "__all__"
 
 
+class GetPlantShortInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Plant
+        fields= ["plant_id", "plant_name"]
+
+
+
 class CollectionsSerializer(serializers.ModelSerializer):
 
-    plant = PlantSerializer(read_only = True, many=True, source='includes_plants')
+    plant = GetPlantShortInfoSerializer(read_only = True, many=True, source='includes_plants')
     user_id = serializers.CharField(source='user.user_id', read_only=True)
     time_create = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
@@ -193,7 +200,7 @@ class CollectionsSerializer(serializers.ModelSerializer):
 
 class CollectionPlantSerializer(serializers.ModelSerializer):
     collection_name = serializers.CharField(source='collection.collection_name', read_only=True)
-    plant = PlantSerializer(read_only=True)
+    plant = GetPlantShortInfoSerializer(read_only=True)
 
     class Meta:
         model = CollectionPlant
@@ -203,7 +210,7 @@ class CollectionPlantSerializer(serializers.ModelSerializer):
 
 class RecommendationForPlantSerializer(serializers.ModelSerializer):
 
-    plants = PlantSerializer(read_only = True, many=True, source='includes_plants')
+    plants = GetPlantShortInfoSerializer(read_only = True, many=True, source='includes_plants')
     plant_id = serializers.PrimaryKeyRelatedField(source='plant', read_only=True)
     collection_id = serializers.PrimaryKeyRelatedField(source='collection', read_only=True)
 
@@ -215,7 +222,7 @@ class RecommendationForPlantSerializer(serializers.ModelSerializer):
 
 class RecommendationForCollectionSerializer(serializers.ModelSerializer):
 
-    plants = PlantSerializer(read_only = True, many=True, source='includes_plants')
+    plants = GetPlantShortInfoSerializer(read_only = True, many=True, source='includes_plants')
     plant_id = serializers.PrimaryKeyRelatedField(source='plant', read_only=True)
     collection_id = serializers.PrimaryKeyRelatedField(source='collection', read_only=True)
     user_id = serializers.CharField(source='user.user_id', read_only=True)

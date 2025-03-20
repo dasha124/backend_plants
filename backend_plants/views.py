@@ -875,7 +875,7 @@ def get_recommendation_by_coll(request, id_coll, format=None):
     with open('recs/vects_1.npy', 'rb') as f:
         vects = np.load(f)
     
-    collection = Collection.objects.get(collection_id=id_coll)
+    collection = Collection.objects.get(collection_id=id_coll, user=user_id)
     plant_ids = collection.includes_plants.values_list('plant_id', flat=True)
     plant_ids_list = list(plant_ids)
     print(plant_ids_list)
@@ -897,7 +897,8 @@ def get_recommendation_by_coll(request, id_coll, format=None):
     output_len = len(similar_ids)
 
     try:
-        recommendation = Recommendation.objects.get(collection=id_coll)
+        recommendation = Recommendation.objects.get(collection=id_coll, user=user_id)
+        print("Рекомендация сущесвтует")
         if recommendation:
             RecommendationPlant.objects.filter(recommendation_id = recommendation).delete()
             
