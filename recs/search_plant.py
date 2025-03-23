@@ -25,31 +25,27 @@ def scoreImagePage(request):
 @permission_classes([AllowAny])
 @authentication_classes([])
 def predictImage(request):
-    fileObj = request.FILES['filePath']
-    fs = FileSystemStorage()
-    filePathName = fs.save('images/'+fileObj.name,fileObj)
-    filePathName = fs.url(filePathName)
+    base64_str = request.data.get('filePath')
     modelName = request.POST.get('modelName')
     # scorePrediction, img_uri = predictImageData(modelName, '.'+filePathName)
     # scorePrediction 
-    serialized_plants_data = predictImageData(modelName, '.'+filePathName)
+    serialized_plants_data = predictImageData(modelName, base64_str)
     # context = {'scorePrediction': scorePrediction, 'filePathName': filePathName, 'img_uri': img_uri}  
     # return render(request, 'scorepage.html', context)
-    context = serialized_plants_data
+    
         # {'scorePrediction': scorePrediction}
     # return render(request, 'scorepage.html', context)
     # return context
-    return Response(context)
+    return Response(serialized_plants_data)
 
 
-def predictImageData(modelName, filePath):
-    img = Image.open(filePath).convert("RGB")
+def predictImageData(modelName, base64_str):
+
+    image_data = base64.b64decode(base64_str)
+    img = Image.open(BytesIO(image_data)).convert("RGB")
     resized_img = img.resize((320, 320), Image.LANCZOS)
     img = np.asarray(img.resize((32, 32), Image.LANCZOS))
       
-    img_uri = to_data_uri(resized_img)  
-    input_image = Image.open(filePath) 
-
     try:
         import onnxruntime
     except ModuleNotFoundError:
@@ -76,8 +72,3 @@ def to_image(numpy_img):
     img = Image.fromarray(numpy_img, 'RGB')  
     return img  
   
-def to_data_uri(pil_img):  
-    data = BytesIO()  
-    pil_img.save(data, "JPEG")  # pick your format  
-    data64 = base64.b64encode(data.getvalue())  
-    return u'data:img/jpeg;base64,' + data64.decode('utf-8')
