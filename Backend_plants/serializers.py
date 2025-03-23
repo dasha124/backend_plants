@@ -177,7 +177,7 @@ class GetPlantShortInfoSerializer(serializers.ModelSerializer):
 
 class CollectionsSerializer(serializers.ModelSerializer):
 
-    plant = GetPlantShortInfoSerializer(read_only = True, many=True, source='includes_plants')
+    plants = GetPlantShortInfoSerializer(read_only = True, many=True, source='includes_plants')
     user_id = serializers.CharField(source='user.user_id', read_only=True)
     time_create = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
@@ -200,7 +200,7 @@ class CollectionsSerializer(serializers.ModelSerializer):
 
 class CollectionPlantSerializer(serializers.ModelSerializer):
     collection_name = serializers.CharField(source='collection.collection_name', read_only=True)
-    plant = GetPlantShortInfoSerializer(read_only=True)
+    plants = GetPlantShortInfoSerializer(read_only=True)
 
     class Meta:
         model = CollectionPlant
