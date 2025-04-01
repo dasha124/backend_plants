@@ -3,4 +3,4 @@ from django.apps import AppConfig
 
 class BackendPlantsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'backend_plants'
+    name = 'backend_plants_app'

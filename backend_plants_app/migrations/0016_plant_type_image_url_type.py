@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend_plants', '0015_remove_collection_image_url_collection'),
+        ('backend_plants_app', '0015_remove_collection_image_url_collection'),
     ]
 
     operations = [

@@ -6,6 +6,7 @@ from Backend_plants.serializers import *
 import environ
 
 env = environ.Env()
+environ.Env.read_env()
 
 def process_file_upload(file_object: InMemoryUploadedFile, client, image_name):
     print("//process_file_upload")
@@ -15,7 +16,7 @@ def process_file_upload(file_object: InMemoryUploadedFile, client, image_name):
     print("Объем файла:", file_object.size)
     try:
         client.put_object('logo', image_name, file_object, file_object.size)
-        return f"{settings.AWS_S3_ENDPOINT_HOST}/logo/{image_name}"
+        return f"http://{settings.AWS_S3_ENDPOINT_HOST}/logo/{image_name}"
     except Exception as e:
         return {"error": str(e)}
 
@@ -25,8 +26,8 @@ def add_pic(new_plant: Plant, pic):
     client = Minio(           
         endpoint=settings.AWS_S3_ENDPOINT_HOST,
         # endpoint=env('AWS_S3_ENDPOINT_HOST'),
-        access_key=env('AWS_ACCESS_KEY_ID'),
-        secret_key=env('AWS_SECRET_ACCESS_KEY'),
+        access_key=settings.AWS_ACCESS_KEY_ID,
+        secret_key=settings.AWS_SECRET_ACCESS_KEY,
         secure=settings.MINIO_USE_SSL,
         # secure=env('MINIO_USE_SSL'),
     )

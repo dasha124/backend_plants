@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission
 
-from backend_plants.jwt_tokens import get_jwt_payload, get_access_token
-from backend_plants.models import CustomUser, AdminUser
+from backend_plants_app.jwt_tokens import get_jwt_payload, get_access_token
+from backend_plants_app.models import CustomUser, AdminUser
 
 
 class IsUser(BasePermission):

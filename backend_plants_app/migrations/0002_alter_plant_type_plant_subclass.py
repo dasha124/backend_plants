@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend_plants', '0001_initial'),
+        ('backend_plants_app', '0001_initial'),
     ]
 
     operations = [

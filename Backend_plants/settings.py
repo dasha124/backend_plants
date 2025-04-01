@@ -12,10 +12,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
-import environ
-env = environ.Env()
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# import environ
+# import os
+# env = environ.Env()
+# environ.Env.read_env(os.path.join(os.path.dirname(__file__), '.env'))
+# # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -23,10 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = 'django-insecure-xhn%#8^=6t+vndayxychg+h(je3gv0zk1dxtp)f-27g7z4m5k4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env('DEBUG')
+DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
@@ -34,7 +35,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    'backend_plants',
+    'backend_plants_app',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -71,9 +72,8 @@ REST_FRAMEWORK = {
 # REDIS_HOST = '0.0.0.0'
 # REDIS_PORT = 6379
 
-REDIS_HOST = env('REDIS_HOST'),
-REDIS_PORT = env('REDIS_PORT'),
-
+REDIS_HOST = 'redis',
+REDIS_PORT = 6379,
 
 
 MIDDLEWARE = [
@@ -136,13 +136,15 @@ WSGI_APPLICATION = 'Backend_plants.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DATABASE_NAME'),
-        'USER': env('DATABASE_USER'),
-        'PASSWORD': env('DATABASE_PASSWORD'),
+        'NAME': 'plants_app_db',
+        'USER': 'postgres',
+        'PASSWORD': 'root',
         # 'HOST': env('DATABASE_HOST'),
         'HOST': 'localhost',
-        'PORT': env('DATABASE_PORT'),
-        'OPTIONS': {'options': '-c client_encoding=utf8'},
+        'PORT': 5432,
+        'OPTIONS': {
+       'options': '-c client_encoding=UTF8 -c datestyle=ISO'
+   },
         'TEST_CHARSET': 'utf8',
     }
 }
@@ -158,8 +160,8 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 AWS_STORAGE_BUCKET_NAME = 'logo'
 AWS_ACCESS_KEY_ID = 'minioadmin'
 AWS_SECRET_ACCESS_KEY = 'minioadmin'
-AWS_S3_ENDPOINT_URL = 'http://192.168.2.107:9000',
-AWS_S3_ENDPOINT_HOST = "192.168.2.107:9000"
+AWS_S3_ENDPOINT_URL = 'http://localhost:9000',
+AWS_S3_ENDPOINT_HOST = "localhost:9000"
 MINIO_USE_SSL = False
 
 
@@ -192,7 +194,7 @@ CORS_ALLOW_HEADERS = [
     "Authorization",
     "Content-Type",
 ]
-AUTH_USER_MODEL = 'backend_plants.CustomUser'
+AUTH_USER_MODEL = 'backend_plants_app.CustomUser'
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]

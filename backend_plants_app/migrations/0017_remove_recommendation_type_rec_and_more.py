@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend_plants', '0016_plant_type_image_url_type'),
+        ('backend_plants_app', '0016_plant_type_image_url_type'),
     ]
 
     operations = [

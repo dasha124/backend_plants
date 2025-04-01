@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from Backend_plants.serializers import *
-from backend_plants.models import *
+from backend_plants_app.models import *
 from rest_framework.decorators import api_view
 from operator import itemgetter
 # from drf_yasg.utils import swagger_auto_schema
@@ -31,8 +31,8 @@ from django.core.cache import cache
 from base64 import b64encode
 from django.core.files.base import ContentFile
 import requests
-from backend_plants.to_minio import *
-from backend_plants.get_pic_from_minio import *
+from backend_plants_app.to_minio import *
+from backend_plants_app.get_pic_from_minio import *
 from recs.recs import *
 from recs.imgs_from_minio import *
 # from drf_yasg.utils import swagger_auto_schema
@@ -405,12 +405,12 @@ def update_plant(request, id, format=None):
 
     final_data = {
         'plant_id': id,
-        'plant_name': data['plant_name'],
-        'plant_class': data['plant_class'],
-        'plant_subclass': data['plant_subclass'] if data['plant_subclass'] else None,  # Установим None, если пусто
-        'plant_type': data['plant_type'],
-        'general_info': data['general_info'], 
-        'properties': json.loads(data['properties']),
+        # 'plant_name': data['plant_name'],
+        # 'plant_class': data['plant_class'],
+        # 'plant_subclass': data['plant_subclass'] if data['plant_subclass'] else None,  # Установим None, если пусто
+        # 'plant_type': data['plant_type'],
+        # 'general_info': data['general_info'], 
+        # 'properties': json.loads(data['properties']),
     }
     plant_class_name = data.get("plant_class")
     plant_class_id = None

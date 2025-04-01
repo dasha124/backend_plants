@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend_plants', '0007_recommendation_user'),
+        ('backend_plants_app', '0007_recommendation_user'),
     ]
 
     operations = [

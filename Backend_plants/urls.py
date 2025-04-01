@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from backend_plants import views
+from backend_plants_app import views
 from rest_framework import routers
 from rest_framework import permissions
 from django.urls import path, include

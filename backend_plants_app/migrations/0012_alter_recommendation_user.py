@@ -8,7 +8,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend_plants', '0011_recommendation_collection_recommendation_plant_and_more'),
+        ('backend_plants_app', '0011_recommendation_collection_recommendation_plant_and_more'),
     ]
 
     operations = [

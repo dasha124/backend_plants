@@ -39,3 +39,7 @@ python manage.py migrate <название вашего приложения>
 'эхинацея'
 
 /9j/4AAQSkZ..
+
+
+ mc alias set localminio http://localhost:9000 minioadmin minioadmin
+ minio server C:\Users\Dasha\minio\
