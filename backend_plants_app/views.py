@@ -133,7 +133,7 @@ def login_view(request):
         "user_name": user.username,
         "user_email": user.email,
         "is_superuser": user.is_superuser,
-        "access_token": access_token
+        # "access_token": access_token
     }
     response = HttpResponse(json.dumps(response_data), content_type="application/json")
     response.set_cookie('access_token', access_token, httponly=False, expires=access_token_lifetime, samesite=None, secure=True)
@@ -220,9 +220,9 @@ def get_plants(request, format=None):
 
     if plant_name_r:
         print("plant_name_r =", plant_name_r)
-        plants = plants.filter(
-            Q(plant_name__icontains = plant_name_r.lower())
-        )
+        plants_before = plants.count()
+        plants = plants.filter(Q(plant_name__icontains=plant_name_r.lower()))
+        print(f"Filtered plants by name (before: {plants_before}, after: {plants.count()})")
     if type_name_r:
         print("type_name_r =", type_name_r)
         plant_type = get_object_or_404(Plant_Type, type_name__icontains = type_name_r)

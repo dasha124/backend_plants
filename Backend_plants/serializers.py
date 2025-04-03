@@ -171,7 +171,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 class GetPlantShortInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant
-        fields= ["plant_id", "plant_name"]
+        fields= ["plant_id", "plant_name", "image_url_plant"]
 
 
 

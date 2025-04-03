@@ -62,7 +62,20 @@ def predictImageData(modelName, base64_str):
     print("!!!!!!!!")
     score = imageClassList[outputOFModel]
     print("score =", score)
-    return ({"type": score})
+
+    plants = Plant.objects.all()
+    plants = plants.filter(
+        Q(plant_name__icontains = score.lower()),
+        Q(status='a')
+    )
+
+    serializer = GetPlantShortInfoSerializer(plants, many=True)
+    # return serializer.data
+    response_data = {
+        "type": score,
+        "plants": serializer.data
+    }
+    return (response_data)
 
   
 def to_numpy(tensor):  
