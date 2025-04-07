@@ -23,7 +23,7 @@ def get_images_from_minio(plant_list: List[Plant]):
 
     for plant in plant_list:
         img_obj_name = f"{plant.plant_name}.png"
-        print(img_obj_name)
+        # print(img_obj_name)
 
         try:
             # Получаем объект изображения

@@ -6,28 +6,28 @@ from django.contrib.auth.models import Group, Permission
 
 class NewUserManager(BaseUserManager):
 
-    def create_user(self,email,password=None, **extra_fields):
-        if not email:
-            raise ValueError('Поле "email" обязательно')
+    def create_user(self,username,password=None, **extra_fields):
+        if not username:
+            raise ValueError('Поле "username" обязательно')
         
-        email = self.normalize_email(email) 
-        user = self.model(email=email, **extra_fields) 
+        # email = self.normalize_email(email) 
+        user = self.model(username=username, **extra_fields) 
         user.set_password(password)
         user.save(using=self.db)
         return user
     
-    def create_superuser(self, email, password=None, **extra_fields):
+    def create_superuser(self, username, password=None, **extra_fields):
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault('is_superuser', True)
-        return self.create_user(email, password, **extra_fields)
+        return self.create_user(username, password, **extra_fields)
     
 
 #----------------------------------------------------------------------------------------------------------------
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     user_id = models.AutoField(primary_key=True, db_column='user_id')
-    email = models.EmailField(("email адрес"), unique=True)
+    # email = models.EmailField(("email адрес"), default="a")
     username = models.CharField(max_length=30, default='', verbose_name="Имя пользователя", unique=True)
     password = models.TextField(max_length=256, verbose_name="Пароль")    
     is_staff = models.BooleanField(default=False, verbose_name="Является ли пользователь менеджером?")

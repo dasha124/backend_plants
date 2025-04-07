@@ -2,6 +2,23 @@ import json
 import numpy as np
 
 
+# try:
+#     with open('recs/vects_1.npy', 'rb') as f:
+#              vects = np.load(f)
+# except EOFError:
+#     print("Ошибка: файл 'vects_1.npy' пуст или поврежден.")
+# except Exception as e:
+#     print(f"Произошла ошибка при загрузке 'vects_1.npy': {e}")
+
+# # Загрузка JSON
+# try:
+#     with open('recs/index_1.json', 'r') as f:
+#         index = json.load(f)
+# except json.JSONDecodeError:
+#     print("Ошибка: файл 'index_1.json' имеет некорректный формат JSON.")
+# except Exception as e:
+#     print(f"Произошла ошибка при загрузке 'index_1.json': {e}")
+
 
 with open('recs/vects_1.npy', 'rb') as f:
   vects = np.load(f)
@@ -9,7 +26,7 @@ with open('recs/vects_1.npy', 'rb') as f:
 with open('recs/index_1.json', 'rb') as f:
   index = json.load(f)
 
-def get_similar(v, vects, n=5):
+def get_similar(v, vects, n):
     scores = np.matmul(vects, v)
     scores = scores / 128
     top_similat_ind = (-scores).argsort()[:n]

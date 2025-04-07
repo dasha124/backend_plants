@@ -24,7 +24,7 @@ def put_img_to_index(image_data, image_name):
     num_classes = 31
     in_features = model.fc.in_features
     model.fc = nn.Linear(in_features=in_features, out_features=num_classes, bias=True)
-    state_dict = torch.load('/home/darya/Документы/GitHub/backend_plants/model/my_model.pth')
+    state_dict = torch.load('C:/Users/Dasha/diplom/backend_plants/model/my_model.pth')
 
     new_state_dict = {}
     for key, value in state_dict.items():
@@ -94,18 +94,69 @@ def put_img_to_index(image_data, image_name):
     vects_norm_np = vects_norm.numpy()
 
     file_path = './recs/vects_1.npy'
-
+        
     vects_norm_np = vects_norm_np.astype(np.float16)
     vects_norm_np_q = vects_norm_np * 128
     vects_norm_np_q = vects_norm_np_q.astype(np.int8)
 
-    if os.path.exists(file_path):
-        existing_vectors = np.load(file_path)
-        for vec in vects_norm_np_q:
-            if not np.any(np.all(existing_vectors == vec, axis=1)):
-                existing_vectors = np.concatenate((existing_vectors, vec[np.newaxis, :]), axis=0)
-    else:
-        existing_vectors = vects_norm_np_q
+    try:
+    # Проверяем, существует ли файл и его размер больше 0
+        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+            existing_vectors = np.load(file_path)
+            for vec in vects_norm_np_q:
+                if not np.any(np.all(existing_vectors == vec, axis=1)):
+                    existing_vectors = np.concatenate((existing_vectors, vec[np.newaxis, :]), axis=0)
+        else:
+            existing_vectors = vects_norm_np_q
+            print("Файл создан и сохранен.")
+        
+        # Сохраняем массив в любом случае
+        with open(file_path, 'wb') as f:
+            np.save(f, existing_vectors)
 
-    with open(file_path, 'wb') as f:
-        np.save(f, existing_vectors)
+    except OSError as e:
+        print(f"Ошибка доступа к файлу: {e}, создаю новый файл.")
+        existing_vectors = vects_norm_np_q
+        with open(file_path, 'wb') as f:
+            np.save(f, existing_vectors)  # Создали новый файл на случай ошибки
+
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
+
+
+    #///////////////////////////////////////////////////////////////////////////////////////////
+    # if os.path.exists(file_path):
+    #     existing_vectors = np.load(file_path)
+    #     for vec in vects_norm_np_q:
+    #         if not np.any(np.all(existing_vectors == vec, axis=1)):
+    #             existing_vectors = np.concatenate((existing_vectors, vec[np.newaxis, :]), axis=0)
+    # else:
+    #     existing_vectors = vects_norm_np_q
+
+    # 
+    # file_path = './recs/vects_1.npy'
+
+    # vects_norm_np = vects_norm_np.astype(np.float16)
+    # vects_norm_np_q = vects_norm_np * 128
+    # vects_norm_np_q = vects_norm_np_q.astype(np.int8)
+
+    # try:
+    #     if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+    #         existing_vectors = np.load(file_path)
+    #         for vec in vects_norm_np_q:
+    #             if not np.any(np.all(existing_vectors == vec, axis=1)):
+    #                 existing_vectors = np.concatenate((existing_vectors, vec[np.newaxis, :]), axis=0)
+    #     else:
+    #         existing_vectors = vects_norm_np_q
+    #         np.save(file_path, existing_vectors)  # Сохраните массив, если файла нет или он пуст
+    #         print("Файл создан и сохранен.")
+    # except EOFError:
+    #     print("Ошибка: файл 'vects_1.npy' пуст или поврежден. Создаю новый файл.")
+    #     existing_vectors = vects_norm_np_q
+    #     np.save(file_path, existing_vectors)  # Обязательно создайте новый файл
+    # except Exception as e:
+    #     print(f"Произошла ошибка: {e}")
+    
+
+    #     with open(file_path, 'wb') as f:
+    #         np.save(f, existing_vectors)

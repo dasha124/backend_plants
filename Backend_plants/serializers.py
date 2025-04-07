@@ -210,7 +210,7 @@ class CollectionPlantSerializer(serializers.ModelSerializer):
 
 class RecommendationForPlantSerializer(serializers.ModelSerializer):
 
-    plants = GetPlantShortInfoSerializer(read_only = True, many=True, source='includes_plants')
+    plants = plants = serializers.SerializerMethodField()
     plant_id = serializers.PrimaryKeyRelatedField(source='plant', read_only=True)
     collection_id = serializers.PrimaryKeyRelatedField(source='collection', read_only=True)
 
@@ -218,7 +218,11 @@ class RecommendationForPlantSerializer(serializers.ModelSerializer):
         model = Recommendation
         exclude = ['includes_plants', 'plant', 'user', 'collection', 'last_modified_date', 'last_modified_time']
 
-
+    def get_plants(self, obj):
+        # Получаем объекты RecommendationPlant, сортируя их по order внутри RecommendationPlant
+        recommendation_plants = RecommendationPlant.objects.filter(recommendation=obj).order_by('-weight')  # Убедитесь, что id - это поле, которое отражает порядок добавления
+        plants = [rec_plant.plant for rec_plant in recommendation_plants]  # Извлекаем растения
+        return GetPlantShortInfoSerializer(plants, many=True).data
 
 class RecommendationForCollectionSerializer(serializers.ModelSerializer):
 
@@ -267,7 +271,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ('user_id', 'email', 'password', 'is_staff', 'is_superuser', 'username')
+        fields = ('user_id',  'password', 'is_staff', 'is_superuser', 'username')
         write_only_fields = ('password',)
         read_only_fields = ('user_id',)
 
@@ -276,7 +280,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         is_superuser = validated_data.pop('is_superuser', False)
 
         user = CustomUser.objects.create(
-            email=validated_data['email'],
+            # email=validated_data['email'],
             username = validated_data['username']
         )
 

@@ -571,6 +571,7 @@ def get_collections(request, format=None):
         return Response('Нет токена')
     
     payload = get_jwt_payload(token)
+    print("coll_payload =", payload)
     user_id = payload["user_id"]
 
     curr_user = CustomUser.objects.get(user_id = user_id)
@@ -817,7 +818,7 @@ def get_recommendation_by_plant(request, id_plant, format=None):
 
     try: 
         recommendation = Recommendation.objects.get(plant=id_plant0)
-
+        print("рекомендация на данное растение уже существует")
         if recommendation:
             RecommendationPlant.objects.filter(recommendation_id = recommendation).delete()
             # serializer = RecommendationSerializer(recommendation)

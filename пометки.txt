@@ -8,24 +8,20 @@ sudo service redis stop
 redis-server
 
 .\redis-server.exe
+C:\Users\Dasha\Downloads\Redis-x64-3.0.504> .\redis-server.exe
 
-sudo systemctl stop postgresql
-sudo systemctl start postgresql
 
-sudo docker volume prune
+ minio server C:\Users\Dasha\minio\
+
+
    
-
+venv\Scripts\Activate.ps1
 python manage.py runserver 0.0.0.0:8000
 
-sudo kill -9 $(sudo lsof -t -i:80)
-
-
-venv\Scripts\Activate.ps1
 
 netstat -a -n -o | findstr :8000
 taskkill /F /PID <PID>
 
-sudo MINIO_ROOT_USER=minioadmin MINIO_ROOT_PASSWORD=minioadmin ./minio server /mnt/data --console-address ":9001"
 
 Удалить все папки pycache
 Удалить все файлы миграции (в папке migrations должен оставаться только файл init.py)
