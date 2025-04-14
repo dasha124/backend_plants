@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'storages',
 ]
 
-ACCESS_TOKEN_LIFETIME = 3600
+# ACCESS_TOKEN_LIFETIME = 3600
 
 JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),

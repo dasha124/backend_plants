@@ -53,7 +53,7 @@ def predictImageData(modelName, base64_str):
             score = "глициния"
             
             return ({"type": score})
-    sess = onnxruntime.InferenceSession(r'/home/darya/Документы/GitHub/backend_plants/Backend_plants/media/model/cifar100_5.onnx')
+    sess = onnxruntime.InferenceSession(r'./model/cifar100_5.onnx')
     outputOFModel = np.argmax(sess.run(None, {'input': np.asarray([img]).astype(np.float32)}))
     print(sess.run(None, {'input': np.asarray([img]).astype(np.float32)}))
     print(outputOFModel)

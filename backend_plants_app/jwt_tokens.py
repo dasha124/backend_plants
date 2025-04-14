@@ -38,10 +38,10 @@ def create_refresh_token(user_id):
     return token
 
 def set_access_token_cookie(response, access_token):
-    response.set_cookie('access_token', access_token, expires=ACCESS_TOKEN_LIFETIME, httponly=False)
+    response.set_cookie('access_token', access_token, expires=ACCESS_TOKEN_LIFETIME, httponly=False, secure=False)
 
 def set_refresh_token_cookie(response, refresh_token):
-    response.set_cookie('refresh_token', refresh_token, expires=REFRESH_TOKEN_LIFETIME, httponly=False)
+    response.set_cookie('refresh_token', refresh_token, expires=REFRESH_TOKEN_LIFETIME, httponly=False, secure=False)
 
 
 def get_jwt_payload(token):
@@ -76,15 +76,26 @@ def get_jwt_payload(token):
 
 
 def get_access_token(request):
+    # Проверка в куках
     token = request.COOKIES.get('access_token')
-    if token is None:
-        token = request.data.get('access_token')
-    if token is None:
-        authorization_header = request.headers.get("Authorization")
-        if authorization_header and authorization_header.lower().startswith("bearer "):
-            token = authorization_header[len("bearer "):]
-        else:
-            token = None
-    return token
+    if token:
+        print("Токен получен из куки:", token)
+        return token
+
+    # Проверка в теле запроса
+    token = request.data.get('access_token')
+    if token:
+        print("Токен получен из тела запроса:", token)
+        return token
+
+    # Проверка в заголовках
+    authorization_header = request.headers.get("Authorization")
+    if authorization_header and authorization_header.lower().startswith("bearer "):
+        token = authorization_header[len("bearer "):].strip()  # Убираем "Bearer " и пробелы
+        print("Токен получен из заголовка Authorization:", token)
+        return token
+
+    print("Токен не найден")
+    return None
 
 

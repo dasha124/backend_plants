@@ -69,14 +69,14 @@ def put_img_to_index(image_data, image_name):
 
     # print('\n######################################################################################################################################\n')
     # print("existing_index")
-    # print(existing_index, len(existing_index))
+    print(existing_index, len(existing_index))
     updated_index = existing_index.copy()  # Создаем копию существующего индекса
     for item in index:
         if item not in updated_index:  # Проверяем, есть ли элемент уже в списке
             updated_index.append(item) 
-    # print('\n######################################################################################################################################\n')
+    print('\n######################################################################################################################################\n')
     # print("updated_index")
-    # print(updated_index, len(updated_index))
+    print(updated_index, len(updated_index))
 
     with open(file_path, 'w') as f:
         json.dump(updated_index, f)

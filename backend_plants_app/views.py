@@ -35,6 +35,7 @@ from backend_plants_app.to_minio import *
 from backend_plants_app.get_pic_from_minio import *
 from recs.recs import *
 from recs.imgs_from_minio import *
+import base64
 # from drf_yasg.utils import swagger_auto_schema
 
 
@@ -66,12 +67,12 @@ def register_admin(request):
 
     # Create admin
     admin = serializer.save()
-    message = {
+    сообщение = {
         'сообщение': 'Админ успешно зарегистрирован',
         'admin_id': admin.admin_id
     }
 
-    return Response(message, status=status.HTTP_201_CREATED)
+    return Response(сообщение, status=status.HTTP_201_CREATED)
 
 #@swagger_auto_schema(method='post',request_body=UserRegisterSerializer)
 @api_view(["POST"])
@@ -86,12 +87,12 @@ def register(request):
 
     # Create user
     user = serializer.save()
-    message = {
+    сообщение = {
         'сообщение': 'Пользователь успешно зарегистрирован',
         'user_id': user.user_id
     }
 
-    return Response(message, status=status.HTTP_201_CREATED)
+    return Response(сообщение, status=status.HTTP_201_CREATED)
     
 
 #@swagger_auto_schema(method='post',request_body=UserLoginSerializer)
@@ -110,8 +111,8 @@ def login_view(request):
     user = authenticate(request, **serializer.validated_data)
     print("проверка",user)
     if user is None:
-        message = {"сообщение": "Пользователь не найден"}
-        return Response(message, status=status.HTTP_401_UNAUTHORIZED)
+        сообщение = {"сообщение": "Пользователь не найден"}
+        return Response(сообщение, status=status.HTTP_401_UNAUTHORIZED)
 
     # Создание токена доступа
     access_token = create_access_token(user.user_id)
@@ -120,23 +121,22 @@ def login_view(request):
     user_data = {
        "user_id": user.user_id,
        "user_name": user.username,
-       "user_email": user.email,
        "is_superuser": user.is_superuser,
        "access_token": access_token
     }
-    access_token_lifetime = settings.ACCESS_TOKEN_LIFETIME
+    access_token_lifetime = settings.JWT["ACCESS_TOKEN_LIFETIME"].total_seconds()
     cache.set(access_token, user_data, access_token_lifetime)
+    print("access_token =", access_token)
 
     # Отправка ответа с данными пользователя и установкой куки
     response_data = {
         "user_id": user.user_id,
         "user_name": user.username,
-        "user_email": user.email,
         "is_superuser": user.is_superuser,
         # "access_token": access_token
     }
     response = HttpResponse(json.dumps(response_data), content_type="application/json")
-    response.set_cookie('access_token', access_token, httponly=False, expires=access_token_lifetime, samesite=None, secure=True)
+    response.set_cookie('access_token', access_token, httponly=False, expires=access_token_lifetime, samesite=None, secure=False)
 
     return response
     
@@ -148,15 +148,15 @@ def check(request):
     print("check = ", access_token)
 
     if access_token is None:
-        message = {"message": "Token is not found"}
-        return Response(message, status=status.HTTP_401_UNAUTHORIZED)
+        сообщение = {"сообщение": "Token is not found"}
+        return Response(сообщение, status=status.HTTP_401_UNAUTHORIZED)
     if not cache.has_key(access_token):
-        message = {"message": "Token is not valid"}
-        return Response(message, status=status.HTTP_401_UNAUTHORIZED)
+        сообщение = {"сообщение": "Token is not valid"}
+        return Response(сообщение, status=status.HTTP_401_UNAUTHORIZED)
 
     user_data = cache.get(access_token)
     print(user_data)
-    return Response([{"user_id": user_data['user_id'], "user_name": user_data['user_name'], "user_email": user_data['user_email'], "is_superuser":user_data['is_superuser']}],status=status.HTTP_200_OK)
+    return Response([{"user_id": user_data['user_id'], "user_name": user_data['user_name'], "is_superuser":user_data['is_superuser']}],status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -285,34 +285,75 @@ def add_new_plant(request, format=None):
     data=request.POST
     try:
         plant = Plant.objects.get(plant_name=data['plant_name'])
-        return Response({"message": "Растение с таким названием уже существует в БД"})
+        return Response({"сообщение": "Растение с таким названием уже существует в БД"})
     
     except Plant.DoesNotExist:
         token = get_access_token(request)
         if not token:
-            return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"сообщение": "Access token не найден"}, status=status.HTTP_401_UNAUTHORIZED)
         payload = get_jwt_payload(token)
         user_id = payload["user_id"]
         print("user", user_id)
 
-        image_file = request.FILES.get('image_url')
-        image_url = image_file if image_file else None
+        if request.POST.get('image_url_plant'):
+                base64_image = request.POST.get('image_url_plant')
+                if base64_image is not None and base64_image.startswith('data:image/jpeg;base64,'):
+                    base64_image = base64_image.split(',')[1]
+                    image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpeg')
+
+                elif base64_image is not None and base64_image.startswith('data:image/jpg;base64,'):
+                    base64_image = base64_image.split(',')[1]
+                    image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpg')
+
+                elif base64_image is not None and base64_image.startswith('data:image/png;base64,'):
+                    base64_image = base64_image.split(',')[1]
+                    image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.png')
+
+                else:
+                    image_file = None
+                    return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            image_file = None
+            return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        #----------------------------------------------------------------
+        if not request.POST.get('plant_name'):
+            return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not request.POST.get('general_info'):
+            return Response({"сообщение": "Ошибка получения информации о растении"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not request.POST.get('properties'):
+            return Response({"сообщение": "Ошибка получения характеристик растения"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not request.POST.get('plant_class'):
+            return Response({"сообщение": "Ошибка получения класса растения"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not request.POST.get('plant_subclass'):
+            return Response({"сообщение": "Ошибка получения подкласса растения"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not request.POST.get('plant_type'):
+            return Response({"сообщение": "Ошибка получения типа растения"}, status=status.HTTP_400_BAD_REQUEST)
 
         formatted_data = {
         'plant_name': data['plant_name'],
         'plant_class': data['plant_class'],
-        'plant_subclass': data['plant_subclass'] if data['plant_subclass'] else None,  # Установим None, если пусто
+        'plant_subclass': data['plant_subclass'] if data['plant_subclass'] else None,
         'plant_type': data['plant_type'],
         'general_info': data['general_info'],
         'properties': json.loads(data['properties']),
         }
 
+
+
         
         plant_class_name = data.get("plant_class")
+        # print("plant_class_name = ", plant_class_name)
         plant_class_id = None
         if plant_class_name:
             try:
                 plant_class, created = Plant_Class.objects.get_or_create(class_name=plant_class_name)
+                print("plant_class =", plant_class, plant_class.plant_class_id)
                 last_plant = Plant.objects.last()
                 if last_plant is not None:
                     plant_id = getattr(last_plant, 'plant_id', None)
@@ -321,13 +362,14 @@ def add_new_plant(request, format=None):
                         formatted_data['plant_id'] = plant_id + 1
                     else:
                         print("Поле plant_id не существует в данной модели.")
+                        return Response({"сообщение": "Поле plant_id не существует в данной модели."}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     print("Нет объектов в таблице Plant_Class.")
                 plant_class_id = plant_class.plant_class_id
                 formatted_data['plant_class'] = plant_class_id
                 print(f"Using Plant Class - ID: {plant_class_id}, Name: {plant_class_name}")
             except Exception as e:
-                print(f"Error while getting/creating Plant Class: {e}")
+                return Response({"сообщение": "Ошибка получения/создания класса растения"}, status=status.HTTP_400_BAD_REQUEST)
 
         plant_subclass_name = formatted_data['plant_subclass']
         print("input plant_subclass_name =", plant_subclass_name)
@@ -344,23 +386,23 @@ def add_new_plant(request, format=None):
                     formatted_data['plant_subclass'] = int(plant_subclass_id)
                     print(f"Plant Subclass - ID: {plant_subclass_id}, Name: {plant_subclass_name}")
                 else:
-                    print("Plant class не определен, нельзя создать subclass.")
+                    return Response({"сообщение": "Подкласс растения не определен, нельзя создать"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
-                print(f"Ошибка получения/создания Plant Subclass: {e}")
+                return Response({"сообщение": "Ошибка получения/создания подкласса растения"}, status=status.HTTP_400_BAD_REQUEST)
         
         plant_type_name = formatted_data.get("plant_type")
         plant_type_id = None
         if plant_type_name:
             try:
-                plant_type, created = Plant_Type.objects.get_or_create(type_name=plant_type_name, plant_subclass_id=plant_subclass_id)
+                plant_type, created = Plant_Type.objects.get_or_create(type_name=plant_type_name)
                 plant_type_id = plant_type.plant_type_id
                 formatted_data['plant_type'] = plant_type_id
                 print(f"Using Plant Type - ID: {plant_type_id}, Name: {plant_type_name}")
             except Exception as e:
-                print(f"Error while getting/creating Plant Type: {e}")
+                return Response({"сообщение": "Ошибка получения/создания типа растения"}, status=status.HTTP_400_BAD_REQUEST)
 
         final_data = {
-        'plant_id': formatted_data.get('plant_id'),  # Сначала добавим plant_id
+        'plant_id': formatted_data.get('plant_id'),  # вначало добаление plant_id
         }
         final_data.update(formatted_data)
 
@@ -374,7 +416,11 @@ def add_new_plant(request, format=None):
             admin_user = AdminUser.objects.get(user_id=user_id)
             interaction = Interaction.objects.create(action_id=1, plant_id=plant_id_new, admin=admin_user)
             interaction.save()  
-            return Response({"message": "Растение успешно добавлено в БД"}, status=status.HTTP_201_CREATED)
+            
+            serializer = PlantSerializer(last_plant)
+            sizes = get_images_from_minio([last_plant])
+            print("Растение успешно добавлено в БД")
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -394,6 +440,7 @@ def update_plant(request, id, format=None):
     except Plant.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
+    plant = Plant.objects.get(plant_id=id)
     token = get_access_token(request)
     if not token:
         return Response({"error": "Access token not found"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -401,20 +448,65 @@ def update_plant(request, id, format=None):
     user_id = payload["user_id"]
     print("user", user_id)
 
-    image_file = request.FILES.get('image_url')
-
     final_data = {
-        'plant_id': id,
-        # 'plant_name': data['plant_name'],
-        # 'plant_class': data['plant_class'],
-        # 'plant_subclass': data['plant_subclass'] if data['plant_subclass'] else None,  # Установим None, если пусто
-        # 'plant_type': data['plant_type'],
-        # 'general_info': data['general_info'], 
-        # 'properties': json.loads(data['properties']),
+        'plant_id': id
     }
-    plant_class_name = data.get("plant_class")
-    plant_class_id = None
-    if plant_class_name:
+
+    plant_name = plant.plant_name
+    if request.POST.get('plant_name'):
+        plant_name = request.POST.get('plant_name')
+        final_data['plant_name'] = plant_name
+        try:
+            plant = Plant.objects.get(plant_name=data['plant_name'])
+            return Response({"сообщение": "Растение с таким названием уже существует в БД"})
+        except Plant.DoesNotExist:
+            pass
+    
+    general_info = plant.general_info
+    if request.POST.get('general_info'):
+        general_info = request.POST.get('general_info')
+        final_data['general_info'] = general_info
+
+    properties = plant.properties
+    if request.POST.get('properties'):
+        properties = request.POST.get('properties')
+        final_data['properties'] = properties
+    
+    status_plant = plant.status
+    if data.get("status"):
+        status_plant = data.get("status")
+        final_data['status'] = status_plant
+
+    image_file = plant.image_url_plant
+    if request.POST.get('image_url_plant'):
+        base64_image = request.POST.get('image_url_plant')
+        if base64_image is not None and base64_image.startswith('data:image/jpeg;base64,'):
+            base64_image = base64_image.split(',')[1]
+            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpeg')
+
+        elif base64_image is not None and base64_image.startswith('data:image/jpg;base64,'):
+            base64_image = base64_image.split(',')[1]
+            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpg')
+
+        elif base64_image is not None and base64_image.startswith('data:image/png;base64,'):
+            base64_image = base64_image.split(',')[1]
+            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.png')
+
+        else:
+            image_file = plant.image_url_plant
+            final_data['image_url_plant'] = image_file
+
+    else:
+        image_file = plant.image_url_plant
+        final_data['image_url_plant'] = image_file
+
+
+
+    plant_class_name = plant.class_name
+    if data.get("plant_class"):
+        plant_class_name = data.get("plant_class")
+
+    if plant_class_name is not None:
         try:
             plant_class, created = Plant_Class.objects.get_or_create(class_name=plant_class_name)
             
@@ -425,22 +517,28 @@ def update_plant(request, id, format=None):
             print(f"Error while getting/creating Plant Class: {e}")
     # print("data ser 1",data)
     # Process plant subclass
-    plant_subclass_name = final_data.get("plant_subclass")
-    plant_subclass_id = None
-    if plant_subclass_name:
+
+    plant_subclass_name = plant.subclass_name
+    if data.get("plant_subclass"):
+        plant_subclass_name = data.get("plant_subclass")
+
+    if plant_subclass_name is not None:
         try:
-            plant_subclass, created = Plant_Subclass.objects.get_or_create(subclass_name=plant_subclass_name, plant_class_id = final_data['plant_class'])
+            plant_subclass, created = Plant_Subclass.objects.get_or_create(subclass_name=plant_subclass_name)
             plant_subclass_id = plant_subclass.plant_subclass_id
             final_data['plant_subclass'] = plant_subclass_id
             print(f"Using Plant Subclass - ID: {plant_subclass_id}, Name: {plant_subclass_name}")
         except Exception as e:
             print(f"Error while getting/creating Plant Subclass: {e}")
         
-    plant_type_name = final_data.get("plant_type")
-    plant_type_id = None
-    if plant_type_name:
+    plant_type_name = plant.subclass_name
+    if data.get("plant_type"):
+        plant_type_name = data.get("plant_type")
+    
+
+    if plant_type_name is not None:
         try:
-            plant_type, created = Plant_Type.objects.get_or_create(type_name=plant_type_name, plant_subclass_id=final_data['plant_subclass'])
+            plant_type, created = Plant_Type.objects.get_or_create(type_name=plant_type_name)
             plant_type_id = plant_type.plant_type_id
             final_data['plant_type'] = plant_type_id
             print(f"Using Plant Type - ID: {plant_type_id}, Name: {plant_type_name}")
@@ -453,13 +551,18 @@ def update_plant(request, id, format=None):
         # serializer.save()
         new_plant_instance = serializer.save()
         # print("new_plant_instance =", type(new_plant_instance))
-        pic_result = add_pic(new_plant_instance, image_file)
-
+        if request.POST.get('image_url_plant'):
+            pic_result = add_pic(new_plant_instance, image_file)
+            final_data['image_url_plant'] = pic_result
         plant_id_new = final_data.get('plant_id')
         admin_user = AdminUser.objects.get(admin_id=user_id)
         interaction = Interaction.objects.create(action_id=2, plant_id=plant_id_new, admin=admin_user)
-        interaction.save()  
-        return Response({"message": "Растение успешно обновлено в БД"}, status=status.HTTP_201_CREATED)
+        interaction.save()
+        plant = Plant.objects.get(plant_id=id)
+        serializer = PlantSerializer(plant)
+        sizes = get_images_from_minio([plant])
+        print("Растение успешно обновлено в БД")
+        return Response(serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -488,7 +591,7 @@ def delete_plant(request, id, format=None):
     admin_user = AdminUser.objects.get(admin_id=user_id)
     interaction = Interaction.objects.create(action_id=3, plant_id=id, admin=admin_user)
     interaction.save()  
-    return Response({"message": "Растение имеет статус 'd = deleted'"}, status=status.HTTP_204_NO_CONTENT)
+    return Response({"сообщение": "Растение имеет статус 'd = deleted'"}, status=status.HTTP_204_NO_CONTENT)
 
 
 
@@ -557,7 +660,7 @@ def add_plant_to_collection(request, id_plant, id_coll):
     # serializer = CollectionPlantSerializer(plant_in_col)
     col_serializer = CollectionsSerializer(collection, many=False)
     # return Response(col_serializer.data)
-    return Response({"message": "Растение добавлено в коллекцию", "collection": col_serializer.data}, status=status.HTTP_200_OK)
+    return Response(col_serializer.data, status=status.HTTP_200_OK)
     
 
 # #@swagger_auto_schema(method='get')
@@ -646,8 +749,9 @@ def create_collection(request, format=None):
     collection = Collection.objects.create(user=user)
     collection.collection_name = data['collection_name']
     collection.save()
+    serializer = CollectionsSerializer(collection)
 
-    return Response({"collection_id": collection.collection_id, "collection_name": collection.collection_name}, 
+    return Response(serializer.data, 
                     status=status.HTTP_201_CREATED)
 
 
@@ -712,7 +816,8 @@ def delete_plant_from_collection(request, id_collection, id_plant, format=None):
     if collection.includes_plants.exists():
         collection.includes_plants.remove(plant)
         collection.save()
-        return Response(f"Удаление выбранного растения из коллекции выполнено")
+        serializer = CollectionsSerializer(collection)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     else:
         return Response(f"Объекта выбранного растения для удаления из коллекции не найдено", status = status.HTTP_404_NOT_FOUND)
     
@@ -772,8 +877,7 @@ def update_collection(request, id):
 
     collection.collection_name = data['collection_name']
     collection.save()
-    serializer = CollectionSerializer(collection)
-
+    serializer = CollectionsSerializer(collection)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -998,7 +1102,6 @@ def get_image_sizes_from_minio(request, format=None):
     # plant_list = Plant.objects.filter(plant_id__in = [1, 2])
     plant_list = Plant.objects.all().order_by('plant_name')
     print(plant_list)
-    # sizes = get_image_sizes(plant_list)
     sizes = get_images_from_minio(plant_list)
     # print(sizes)
     return Response(len(sizes))
