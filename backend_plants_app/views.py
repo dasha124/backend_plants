@@ -295,26 +295,6 @@ def add_new_plant(request, format=None):
         user_id = payload["user_id"]
         print("user", user_id)
 
-        if request.POST.get('image_url_plant'):
-                base64_image = request.POST.get('image_url_plant')
-                if base64_image is not None and base64_image.startswith('data:image/jpeg;base64,'):
-                    base64_image = base64_image.split(',')[1]
-                    image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpeg')
-
-                elif base64_image is not None and base64_image.startswith('data:image/jpg;base64,'):
-                    base64_image = base64_image.split(',')[1]
-                    image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpg')
-
-                elif base64_image is not None and base64_image.startswith('data:image/png;base64,'):
-                    base64_image = base64_image.split(',')[1]
-                    image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.png')
-
-                else:
-                    image_file = None
-                    return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            image_file = None
-            return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
         
         #----------------------------------------------------------------
         if not request.POST.get('plant_name'):
@@ -335,6 +315,10 @@ def add_new_plant(request, format=None):
         if not request.POST.get('plant_type'):
             return Response({"сообщение": "Ошибка получения типа растения"}, status=status.HTTP_400_BAD_REQUEST)
 
+        if not request.POST.get('image_url_plant'):
+                return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
+
+        
         formatted_data = {
         'plant_name': data['plant_name'],
         'plant_class': data['plant_class'],
@@ -342,8 +326,8 @@ def add_new_plant(request, format=None):
         'plant_type': data['plant_type'],
         'general_info': data['general_info'],
         'properties': json.loads(data['properties']),
+        'image_url_plant': data['image_url_plant'],
         }
-
 
 
         
@@ -410,7 +394,6 @@ def add_new_plant(request, format=None):
         print("serial 0 =", serializer)
         if serializer.is_valid():
             new_plant_instance = serializer.save()
-            pic_result = add_pic(new_plant_instance, image_file)
             last_plant = Plant.objects.last()
             plant_id_new = getattr(last_plant, 'plant_id', None)
             admin_user = AdminUser.objects.get(user_id=user_id)
@@ -418,7 +401,8 @@ def add_new_plant(request, format=None):
             interaction.save()  
             
             serializer = PlantSerializer(last_plant)
-            sizes = get_images_from_minio([last_plant])
+            sizes = get_images_from_minio([last_plant]) # чтобы в Index записать
+            
             print("Растение успешно добавлено в БД")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -477,34 +461,14 @@ def update_plant(request, id, format=None):
         status_plant = data.get("status")
         final_data['status'] = status_plant
 
-    image_file = plant.image_url_plant
-    if request.POST.get('image_url_plant'):
-        base64_image = request.POST.get('image_url_plant')
-        if base64_image is not None and base64_image.startswith('data:image/jpeg;base64,'):
-            base64_image = base64_image.split(',')[1]
-            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpeg')
-
-        elif base64_image is not None and base64_image.startswith('data:image/jpg;base64,'):
-            base64_image = base64_image.split(',')[1]
-            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpg')
-
-        elif base64_image is not None and base64_image.startswith('data:image/png;base64,'):
-            base64_image = base64_image.split(',')[1]
-            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.png')
-
-        else:
-            image_file = plant.image_url_plant
-            final_data['image_url_plant'] = image_file
-
-    else:
-        image_file = plant.image_url_plant
-        final_data['image_url_plant'] = image_file
-
-
 
     plant_class_name = plant.class_name
     if data.get("plant_class"):
         plant_class_name = data.get("plant_class")
+
+    image_url_plant = plant.image_url_plant
+    if data.get("image_url_plant"):
+        image_url_plant = data.get("image_url_plant")
 
     if plant_class_name is not None:
         try:
@@ -551,16 +515,16 @@ def update_plant(request, id, format=None):
         # serializer.save()
         new_plant_instance = serializer.save()
         # print("new_plant_instance =", type(new_plant_instance))
-        if request.POST.get('image_url_plant'):
-            pic_result = add_pic(new_plant_instance, image_file)
-            final_data['image_url_plant'] = pic_result
+        # if request.POST.get('image_url_plant'):
+        #     pic_result = add_pic(new_plant_instance, image_file)
+        #     final_data['image_url_plant'] = pic_result
         plant_id_new = final_data.get('plant_id')
         admin_user = AdminUser.objects.get(admin_id=user_id)
         interaction = Interaction.objects.create(action_id=2, plant_id=plant_id_new, admin=admin_user)
         interaction.save()
         plant = Plant.objects.get(plant_id=id)
         serializer = PlantSerializer(plant)
-        sizes = get_images_from_minio([plant])
+        sizes = get_images_from_minio([plant]) # Добавление в Index
         print("Растение успешно обновлено в БД")
         return Response(serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -940,7 +904,7 @@ def get_recommendation_by_plant(request, id_plant, format=None):
                     print("d =", plant, plant.plant_id)
             
             serializer = RecommendationForPlantSerializer(recommendation)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data['plants'], status=status.HTTP_201_CREATED)
         
     except Recommendation.DoesNotExist:
         new_rec = Recommendation.objects.create(plant_id=id_plant0, collection=None)
@@ -958,7 +922,7 @@ def get_recommendation_by_plant(request, id_plant, format=None):
                 print("d =", plant, plant.plant_id)
             
         serializer = RecommendationForPlantSerializer(new_rec)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data['plants'], status=status.HTTP_201_CREATED)
 
 
 
@@ -1019,7 +983,7 @@ def get_recommendation_by_coll(request, id_coll, format=None):
                     print("d =", plant, plant.plant_id)
             
             serializer = RecommendationForCollectionSerializer(recommendation)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data['plants'], status=status.HTTP_201_CREATED)
     
     except Recommendation.DoesNotExist:
         new_rec = Recommendation.objects.create(plant=None, collection_id=id_coll, user_id=user.user_id)
@@ -1036,7 +1000,7 @@ def get_recommendation_by_coll(request, id_coll, format=None):
                 print("d =", plant, plant.plant_id)
             
         serializer = RecommendationForCollectionSerializer(new_rec)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data['plants'], status=status.HTTP_201_CREATED)
 
 
         
@@ -1055,13 +1019,6 @@ def get_recommendation_by_coll(request, id_coll, format=None):
 
     
 
-
-@permission_classes([AllowAny])
-@api_view(['GET'])
-def get_recommendation_by_Expert(request, format=None):
-    plants= Plant.objects.all()
-    serializer = GetPlantSerializer(plants, many=True)
-    return Response(serializer.data)
 
 # #@swagger_auto_schema(method='get')
 # @api_view(['GET'])
@@ -1096,7 +1053,7 @@ def obj_delete_user(request, id, format=None):
     return Response(f"Пользователь {id} удален из Базы данных", status=status.HTTP_204_NO_CONTENT)
 
 
-# Пример использования:
+
 @api_view(['GET'])
 def get_image_sizes_from_minio(request, format=None):
     # plant_list = Plant.objects.filter(plant_id__in = [1, 2])
@@ -1105,3 +1062,64 @@ def get_image_sizes_from_minio(request, format=None):
     sizes = get_images_from_minio(plant_list)
     # print(sizes)
     return Response(len(sizes))
+
+
+from collections import defaultdict
+@api_view(['GET'])
+def get_val(request):
+    unique_values = defaultdict(set)
+
+    # Получаем все экземпляры моделей Plant
+    plants = Plant.objects.all()
+
+    for plant in plants:
+        properties = plant.properties
+        for key, value in properties.items():
+            if isinstance(value, list):
+                for item in value:
+                    unique_values[key].add(item)
+            else:
+                unique_values[key].add(value)
+
+    # Преобразуем множества в списки, если нужно
+    unique_values = {key: list(value) for key, value in unique_values.items()}
+
+    # Теперь можно вывести уникальные значения
+    for key, value in unique_values.items():
+        print(f"{key}: {value}")
+    return Response(status=status.HTTP_200_OK)
+
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def put_image_to_minio(request, format=None):
+    print("00000000000")
+    if not request.POST.get('plant_name'):
+        return Response(f"Нет названия у растения")
+    else:
+        pass
+    print("111111111111")
+    if request.POST.get('image_url_plant'):
+        base64_image = request.POST.get('image_url_plant')
+        if base64_image is not None and base64_image.startswith('data:image/jpeg;base64,'):
+            base64_image = base64_image.split(',')[1]
+            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpeg')
+
+        elif base64_image is not None and base64_image.startswith('data:image/jpg;base64,'):
+            base64_image = base64_image.split(',')[1]
+            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpg')
+
+        elif base64_image is not None and base64_image.startswith('data:image/png;base64,'):
+            base64_image = base64_image.split(',')[1]
+            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.png')
+
+        else:
+            image_file = None
+            return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        image_file = None
+        return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
+    print("222222222222")
+    return Response(add_pic(request.POST.get('plant_name'), image_file), status=status.HTTP_200_OK)

@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image  
 from io import BytesIO  
 import base64  
+from rest_framework import status
 from rest_framework.decorators import api_view 
 from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -40,6 +41,18 @@ def predictImage(request):
 
 
 def predictImageData(modelName, base64_str):
+
+    if base64_str is not None and base64_str.startswith('data:image/jpeg;base64,'):
+        base64_str = base64_str.split(',')[1]
+
+    elif base64_str is not None and base64_str.startswith('data:image/jpg;base64,'):
+        base64_str = base64_str.split(',')[1]
+
+    elif base64_str is not None and base64_str.startswith('data:image/png;base64,'):
+        base64_str = base64_str.split(',')[1]
+
+    else:
+        return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
 
     image_data = base64.b64decode(base64_str)
     img = Image.open(BytesIO(image_data)).convert("RGB")

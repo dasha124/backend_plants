@@ -227,14 +227,17 @@ class RecommendationForPlantSerializer(serializers.ModelSerializer):
 class RecommendationForCollectionSerializer(serializers.ModelSerializer):
 
     plants = GetPlantShortInfoSerializer(read_only = True, many=True, source='includes_plants')
-    plant_id = serializers.PrimaryKeyRelatedField(source='plant', read_only=True)
-    collection_id = serializers.PrimaryKeyRelatedField(source='collection', read_only=True)
-    user_id = serializers.CharField(source='user.user_id', read_only=True)
+    # plant_id = serializers.PrimaryKeyRelatedField(source='plant', read_only=True)
+    # collection_id = serializers.PrimaryKeyRelatedField(source='collection', read_only=True)
+    # user_id = serializers.CharField(source='user.user_id', read_only=True)
 
     class Meta:
         model = Recommendation
-        exclude = ['includes_plants', 'user', 'plant', 'collection', 'last_modified_date', 'last_modified_time']
-
+        exclude = ['recommendation_id','includes_plants', 'user', 'plant', 'collection', 'last_modified_date', 'last_modified_time']
+    
+    # def to_representation(self, instance):
+    #         representation = super().to_representation(instance)
+    #         return representation['plants']
 
 class AdminRegisterSerializer(serializers.ModelSerializer):
     is_staff = serializers.BooleanField(required=False)
