@@ -52,7 +52,7 @@ def add_pic(new_plant, pic):
 
     # new_plant.image_url_plant = result
     # new_plant.save()
-    # print("result  =", result)
+    print("result  =", result)
 
     return result
 

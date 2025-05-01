@@ -180,6 +180,7 @@ class CollectionsSerializer(serializers.ModelSerializer):
     plants = GetPlantShortInfoSerializer(read_only = True, many=True, source='includes_plants')
     user_id = serializers.CharField(source='user.user_id', read_only=True)
     time_create = serializers.SerializerMethodField()
+    date_create = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
 
     
@@ -189,6 +190,8 @@ class CollectionsSerializer(serializers.ModelSerializer):
     
     def get_time_create(self, obj):
         return obj.time_create.strftime("%H:%M:%S")
+    def get_date_create(self, obj):
+        return obj.date_create.strftime("%d.%m.%Y")
     
     def get_status(self, obj):
         # Возвращаем текстовое представление статуса

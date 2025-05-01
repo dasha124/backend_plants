@@ -211,8 +211,34 @@ def get_plants(request, format=None):
     plant_name_r = request.GET.get('plant_name')
     type_name_r = request.GET.get('type_name')
     class_name_r = request.GET.get('class_name')
-    light_filter = request.GET.get('light') 
+    water_filter = request.GET.get('water') 
+    toxic_filter = request.GET.get('no_toxic')
+    status_filter = request.GET.get('status')
     token = get_access_token(request)
+
+
+    no_toxic = ['Не ядовитое, безопасное для людей и животных', 
+                'Безопасно для людей и домашних животных', 
+                "Не токсично",
+                "Не ядовитое, безопасное для людей и домашних животных",
+                "Не ядовит, безопасен для окружающей среды", 
+                "Не ядовитое, безопасное для человека и домашних животных",
+                "Не является ядовитым, безопасен для людей и домашних животных",
+                "Безопасен, ядовитости не установлено, однако при контакте с кожей рекомендуется аккуратность.",
+                "Не ядовитое, безопасное для людей и домашних животных.",
+                "Не токсична, безопасна для домашних животных и детей.",
+                "Не является ядовитым, безопасен для людей и домашних животных.",
+                "Не является ядовитым, безопасен для окружающей среды",
+                "Не токсично, безопасно для домашних животных и детей.",
+                "Безопасен для людей и домашних животных",
+                "Безопасна для людей и домашних животных",
+                "Безопасен для людей и домашних животных в умеренных количествах",
+                ]
+    water_obiln = [
+ "Требует регулярного обильного полива, почва должна быть равномерно влажной, но без застоя воды.",
+    ]
+   
+
 
     plants = Plant.objects.all().order_by('plant_name')
 
@@ -231,9 +257,18 @@ def get_plants(request, format=None):
         print("class_name_r =", class_name_r)
         plant_class = get_object_or_404(Plant_Class, class_name = class_name_r)
         plants = plants.filter(plant_class = plant_class.plant_class_id)
-    if light_filter:
-        print("light_filter =", light_filter)
-        plants = plants.filter(properties__light__icontains=light_filter)
+    if water_filter=='обильный':
+        plants = plants.filter(properties__water__in=water_obiln)
+    if toxic_filter=='yes':
+        print("toxic_filter =", toxic_filter)
+        plants = plants.filter(properties__toxic__in=no_toxic)
+    if status_filter=='Удалено':
+        plants = plants.filter(status='d')
+    if status_filter=='Активно':
+        plants = plants.filter(status='a')
+
+
+        
 
     token = get_access_token(request)
     if not token:
@@ -1091,7 +1126,7 @@ def get_val(request):
     # Теперь можно вывести уникальные значения
     for key, value in unique_values.items():
         print(f"{key}: {value}")
-    return Response(status=status.HTTP_200_OK)
+    return Response(unique_values, status=status.HTTP_200_OK)
 
 
 
@@ -1101,29 +1136,28 @@ def get_val(request):
 def put_image_to_minio(request, format=None):
     print("00000000000")
     if not request.POST.get('plant_name'):
-        return Response(f"Нет названия у растения")
-    else:
-        pass
+        return Response(f"Нет названия у растения", status=status.HTTP_400_BAD_REQUEST)
+
     print("111111111111")
-    if request.POST.get('image_url_plant'):
-        base64_image = request.POST.get('image_url_plant')
-        if base64_image is not None and base64_image.startswith('data:image/jpeg;base64,'):
-            base64_image = base64_image.split(',')[1]
-            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpeg')
+    # if request.POST.get('image_url_plant'):
+    #     base64_image = request.POST.get('image_url_plant')
+    #     if base64_image is not None and base64_image.startswith('data:image/jpeg;base64,'):
+    #         base64_image = base64_image.split(',')[1]
+    #         image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpeg')
 
-        elif base64_image is not None and base64_image.startswith('data:image/jpg;base64,'):
-            base64_image = base64_image.split(',')[1]
-            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpg')
+    #     elif base64_image is not None and base64_image.startswith('data:image/jpg;base64,'):
+    #         base64_image = base64_image.split(',')[1]
+    #         image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.jpg')
 
-        elif base64_image is not None and base64_image.startswith('data:image/png;base64,'):
-            base64_image = base64_image.split(',')[1]
-            image_file = ContentFile(base64.b64decode(base64_image), name='plant_image.png')
+    #     elif base64_image is not None and base64_image.startswith('data:image/png;base64,'):
+    #         base64_image = base64_image.split(',')[1]
+    image_file = ContentFile(base64.b64decode(request.POST.get('image_url_plant')), name='plant_image.png')
 
-        else:
-            image_file = None
-            return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
-    else:
-        image_file = None
-        return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
+    #     else:
+    #         image_file = None
+    #         return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
+    # else:
+    #     image_file = None
+    #     return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
     print("222222222222")
     return Response(add_pic(request.POST.get('plant_name'), image_file), status=status.HTTP_200_OK)
