@@ -81,21 +81,21 @@ class PlantSerializer(serializers.ModelSerializer):
             representation['plant_subclass'] = representation['plant_subclass']['subclass_name']  # Convert plant_subclass
         representation['plant_type'] = representation['plant_type']['type_name']  # Convert plant_type
         
-        properties = representation.get('properties', {})
-        formatted_properties = {}
-        for key, value in properties.items():
-            formatted_key = key.lower().replace(' ', '_')  # Приводим к нужному формату
-            if formatted_key == 'ph_siol':
-                formatted_key = 'ph_soil'
-            formatted_properties[formatted_key] = value
+        # properties = representation.get('properties', {})
+        # formatted_properties = {}
+        # for key, value in properties.items():
+        #     formatted_key = key.lower().replace(' ', '_')  # Приводим к нужному формату
+        #     if formatted_key == 'ph_siol':
+        #         formatted_key = 'ph_soil'
+        #     formatted_properties[formatted_key] = value
         
-        representation['properties'] = formatted_properties
+        # representation['properties'] = formatted_properties
         return representation
     # def get_plant_class(self, obj):
     #     return obj.plant_class.class_name if obj.plant_class else None
     
-    # def get_plant_subclass(self, obj):
-    #     return obj.plant_subclass.subclass_name if obj.plant_subclass else None
+    def get_plant_subclass(self, obj):
+        return obj.plant_subclass.subclass_name if obj.plant_subclass else None
     
     def create(self, validated_data):
         plant_class_name = validated_data.pop('plant_class')

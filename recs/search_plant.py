@@ -75,10 +75,18 @@ def predictImageData(modelName, base64_str):
     print("!!!!!!!!")
     score = imageClassList[outputOFModel]
     print("score =", score)
+    if score == "глициния":
+        type_p_id = Plant_Type.objects.get(type_name="Глициния")
+    elif score == "циния":
+        type_p_id = Plant_Type.objects.get(type_name="Циния")
+    else:
+        types = Plant_Type.objects.all()
+        type_p_id = types.filter( Q(type_name__icontains = score.lower())).first()
+        print("type_p_id =", type_p_id)
 
     plants = Plant.objects.all()
     plants = plants.filter(
-        Q(plant_name__icontains = score.lower()),
+        Q(plant_type_id=type_p_id.plant_type_id),
         Q(status='a')
     )
 

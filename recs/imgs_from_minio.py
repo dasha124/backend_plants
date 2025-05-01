@@ -11,7 +11,7 @@ env = environ.Env()
 
 
 def get_images_from_minio(plant_list: List[Plant]):
-
+    print("plant_list", plant_list)
     client = Minio(
         endpoint=settings.AWS_S3_ENDPOINT_HOST,
         access_key=settings.AWS_ACCESS_KEY_ID,

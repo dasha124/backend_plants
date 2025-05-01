@@ -377,13 +377,17 @@ def add_new_plant(request, format=None):
         plant_type_name = formatted_data.get("plant_type")
         plant_type_id = None
         if plant_type_name:
-            try:
-                plant_type, created = Plant_Type.objects.get_or_create(type_name=plant_type_name)
-                plant_type_id = plant_type.plant_type_id
-                formatted_data['plant_type'] = plant_type_id
-                print(f"Using Plant Type - ID: {plant_type_id}, Name: {plant_type_name}")
-            except Exception as e:
-                return Response({"сообщение": "Ошибка получения/создания типа растения"}, status=status.HTTP_400_BAD_REQUEST)
+            # try:
+            plant_type, created = Plant_Type.objects.get_or_create(type_name=plant_type_name, plant_subclass = plant_subclass)
+            plant_type_id = plant_type.plant_type_id
+            formatted_data['plant_type'] = plant_type_id
+            print(f"Using Plant Type - ID: {plant_type_id}, Name: {plant_type_name}")
+            # except Exception as e:
+            #     plant_type, created = Plant_Type.objects.get_or_create(type_name=plant_type_name, plant_subclass = plant_subclass_id)
+            #     plant_type_id = plant_type.plant_type_id
+            #     formatted_data['plant_type'] = plant_type_id
+            #     print(f"Using Plant Type - ID: {plant_type_id}, Name: {plant_type_name}")
+                # return Response({"сообщение": "Ошибка получения/создания типа растения"}, status=status.HTTP_400_BAD_REQUEST)
 
         final_data = {
         'plant_id': formatted_data.get('plant_id'),  # вначало добаление plant_id
