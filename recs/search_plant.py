@@ -26,7 +26,7 @@ def scoreImagePage(request):
 @permission_classes([AllowAny])
 @authentication_classes([])
 def predictImage(request):
-    base64_str = request.data.get('filePath')
+    base64_str = request.data.get('base64str')
     modelName = request.POST.get('modelName')
     # scorePrediction, img_uri = predictImageData(modelName, '.'+filePathName)
     # scorePrediction 
@@ -42,17 +42,17 @@ def predictImage(request):
 
 def predictImageData(modelName, base64_str):
 
-    if base64_str is not None and base64_str.startswith('data:image/jpeg;base64,'):
-        base64_str = base64_str.split(',')[1]
+    # if base64_str is not None and base64_str.startswith('data:image/jpeg;base64,'):
+    #     base64_str = base64_str.split(',')[1]
 
-    elif base64_str is not None and base64_str.startswith('data:image/jpg;base64,'):
-        base64_str = base64_str.split(',')[1]
+    # elif base64_str is not None and base64_str.startswith('data:image/jpg;base64,'):
+    #     base64_str = base64_str.split(',')[1]
 
-    elif base64_str is not None and base64_str.startswith('data:image/png;base64,'):
-        base64_str = base64_str.split(',')[1]
+    # elif base64_str is not None and base64_str.startswith('data:image/png;base64,'):
+    #     base64_str = base64_str.split(',')[1]
 
-    else:
-        return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
+    # else:
+    #     return Response({"сообщение": "Ошибка получения изображения растения"}, status=status.HTTP_400_BAD_REQUEST)
 
     image_data = base64.b64decode(base64_str)
     img = Image.open(BytesIO(image_data)).convert("RGB")

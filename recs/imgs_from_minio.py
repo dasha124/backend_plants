@@ -51,6 +51,6 @@ def get_images_from_minio(plant_list: List[Plant]):
             'image_size': size  # Размер в байтах
         }
 
-    return sizes
+    # return sizes
 
 

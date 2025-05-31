@@ -53,8 +53,8 @@ INSTALLED_APPS = [
 # ACCESS_TOKEN_LIFETIME = 3600
 
 JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=2),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=2),
     "ALGORITHM": "HS256",
     "SIGNING_KEY": "MY_SIGNING_KEY_123",
 }

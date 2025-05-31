@@ -13,9 +13,10 @@ REFRESH_TOKEN_LIFETIME = settings.JWT["REFRESH_TOKEN_LIFETIME"]
 
 def create_access_token(user_id):
     # Create initial payload
+    # expiration = datetime.utcnow() + timedelta(seconds=settings.JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
     payload = {
         "token_type": "access",
-        "exp": datetime.now(tz=timezone.utc) + ACCESS_TOKEN_LIFETIME,
+        "exp": datetime.now(tz=timezone.utc) + timedelta(seconds=settings.JWT["ACCESS_TOKEN_LIFETIME"].total_seconds()),
         "iat": datetime.now(tz=timezone.utc),
     }
     # Add given arguments to payload

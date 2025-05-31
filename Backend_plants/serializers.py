@@ -66,7 +66,7 @@ class PlantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Plant
-        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url_plant", "general_info", "properties"]
+        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url_plant", "general_info", "properties", "status"]
 
     def get_plant_id(self, obj):
         return obj.plant_id
@@ -81,15 +81,6 @@ class PlantSerializer(serializers.ModelSerializer):
             representation['plant_subclass'] = representation['plant_subclass']['subclass_name']  # Convert plant_subclass
         representation['plant_type'] = representation['plant_type']['type_name']  # Convert plant_type
         
-        # properties = representation.get('properties', {})
-        # formatted_properties = {}
-        # for key, value in properties.items():
-        #     formatted_key = key.lower().replace(' ', '_')  # Приводим к нужному формату
-        #     if formatted_key == 'ph_siol':
-        #         formatted_key = 'ph_soil'
-        #     formatted_properties[formatted_key] = value
-        
-        # representation['properties'] = formatted_properties
         return representation
     # def get_plant_class(self, obj):
     #     return obj.plant_class.class_name if obj.plant_class else None
@@ -125,7 +116,7 @@ class PlantSerializer(serializers.ModelSerializer):
 class GetPlantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plant
-        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url_plant", "general_info", "properties"]
+        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url_plant", "general_info", "properties", "status"]
 
     def get_plant_id(self, obj):
         return obj.plant_id
@@ -162,6 +153,70 @@ class GetPlantSerializer(serializers.ModelSerializer):
        return representation
 
 
+
+
+
+# ------------------------------------------------------------------------------------------------
+class GetPlantSerializerWithStatus(serializers.ModelSerializer):
+    plant_class = PlantClassSerializer()
+    plant_subclass = PlantSubclassSerializer()
+    plant_type = PlantTypeSerializer()
+    class Meta:
+        model = Plant
+        fields= ["plant_id", "plant_name", "plant_class", "plant_subclass", "plant_type", "image_url_plant", "general_info", "properties", "status"]
+
+    def get_plant_id(self, obj):
+        return obj.plant_id
+    def get_plant_name(self, obj):
+        return obj.plant_name
+    def get_plant_class(self, obj):
+        return obj.plant_class.class_name if obj.plant_class else None
+    
+    def get_plant_subclass(self, obj):
+        return obj.plant_subclass.subclass_name if obj.plant_subclass else None
+    
+    def create(self, validated_data):
+        plant_class_name = validated_data.pop('plant_class')
+        plant_subclass_name = validated_data.pop('plant_subclass', None)
+
+        # Получаем или создаем Plant_Class
+        plant_class, created = Plant_Class.objects.get_or_create(class_name=plant_class_name)
+
+        # Получаем или создаем Plant_Subclass, если оно предоставлено
+        plant_subclass = None
+        if plant_subclass_name:
+            plant_subclass, _ = Plant_Subclass.objects.get_or_create(subclass_name=plant_subclass_name, plant_class=plant_class)
+
+        plant = Plant.objects.create(
+            plant_class=plant_class,
+            plant_subclass=plant_subclass,
+            **validated_data
+        )
+        return plant
+
+    def get_status(self, obj):
+        # Возвращаем текстовое представление статуса
+        status_mapping = {
+            "a": "Активно",
+            "d": "Удалено"
+        }
+        return status_mapping.get(obj.status, "Неизвестный статус")
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        representation['plant_class'] = representation['plant_class']['class_name']  # Convert plant_class
+        if representation['plant_subclass']:
+            representation['plant_subclass'] = representation['plant_subclass']['subclass_name']  # Convert plant_subclass
+        representation['plant_type'] = representation['plant_type']['type_name']  # Convert plant_type
+        representation['status'] = self.get_status(instance)
+
+        return representation
+    
+
+
+
+#------------------------------------------------------------------------------
 class CollectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Collection
@@ -248,7 +303,7 @@ class AdminRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AdminUser
-        fields = ('admin_id', 'email', 'password', 'is_staff', 'is_superuser', 'username')
+        fields = ('admin_id', 'password', 'is_staff', 'is_superuser', 'username')
         write_only_fields = ('password',)
         read_only_fields = ('admin_id',)
 
@@ -257,7 +312,7 @@ class AdminRegisterSerializer(serializers.ModelSerializer):
         is_superuser = validated_data.pop('is_superuser', True)
 
         admin = AdminUser.objects.create(
-            email=validated_data['email'],
+            # email=validated_data['email'],
             username = validated_data['username']
         )
 

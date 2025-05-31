@@ -84,3 +84,9 @@ git checkout -b w2-add-update-plant-with-minio-base64
 
  mc alias set localminio http://localhost:9000 minioadmin minioadmin
  minio server C:\Users\Dasha\minio\
+ 
+
+
+
+ если менять инфу о растении: имя, то надо картинку заново подгрузить, иначе ошибка,
+  что с новым именем фотки в минио нет. плэтому меняем и имя и фотку и лучше какие то поля сразу
